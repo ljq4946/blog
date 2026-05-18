@@ -29,3 +29,34 @@ export function toPostInput(form: PostForm): PostInput {
     publishedAt: form.publishedAt ?? null
   };
 }
+
+export function wordCountFromHtml(html?: string | null) {
+  const text = (html ?? "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!text) {
+    return 0;
+  }
+
+  const latinWords = text.match(/[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*/g) ?? [];
+  const cjkCharacters = text.match(/[\u3400-\u9fff]/g) ?? [];
+  return latinWords.length + cjkCharacters.length;
+}
+
+export function postFormSnapshot(form: PostForm) {
+  return JSON.stringify({
+    title: form.title?.trim() ?? "",
+    slug: form.slug?.trim() ?? "",
+    summary: form.summary ?? "",
+    contentHtml: form.contentHtml ?? "",
+    coverMediaId: form.coverMediaId ?? null,
+    status: form.status ?? "DRAFT",
+    categoryId: form.categoryId ?? null,
+    tagIds: [...(form.tagIds ?? [])].sort((left, right) => left - right),
+    publishedAt: form.publishedAt ?? null
+  });
+}
