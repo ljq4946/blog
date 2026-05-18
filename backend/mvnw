@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+set -eu
+MAVEN_VERSION=3.9.9
+BASE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+MVN_DIR="$BASE_DIR/.mvn/apache-maven-$MAVEN_VERSION"
+if [ ! -x "$MVN_DIR/bin/mvn" ]; then
+  mkdir -p "$BASE_DIR/.mvn"
+  ZIP="$BASE_DIR/.mvn/apache-maven.zip"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.zip" -o "$ZIP"
+  else
+    wget -q "https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.zip" -O "$ZIP"
+  fi
+  unzip -q -o "$ZIP" -d "$BASE_DIR/.mvn"
+fi
+exec "$MVN_DIR/bin/mvn" --settings "$BASE_DIR/.mvn/settings.xml" "$@"

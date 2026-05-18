@@ -1,0 +1,20 @@
+.idea/
+
+# Java
+backend/target/
+backend/.mvn/apache-maven-*/
+backend/.mvn/apache-maven.zip
+uploads/
+
+# Node
+frontend/node_modules/
+frontend/**/node_modules/
+frontend/**/dist/
+frontend/.vite-cache/
+frontend/apps/*/vite.config.js
+frontend/apps/*/vite.config.d.ts
+.pnpm-store/
+
+# Local environment
+deploy/.env
+logs/

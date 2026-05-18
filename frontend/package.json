@@ -1,0 +1,27 @@
+{
+  "name": "blog-frontend",
+  "private": true,
+  "packageManager": "pnpm@11.1.2",
+  "scripts": {
+    "dev:admin": "corepack pnpm --filter @blog/admin dev",
+    "dev:web": "corepack pnpm --filter @blog/web dev",
+    "build": "corepack pnpm --filter @blog/shared build && corepack pnpm --filter @blog/admin build && corepack pnpm --filter @blog/web build",
+    "test": "corepack pnpm -r --if-present test",
+    "lint": "corepack pnpm -r --if-present lint",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.2",
+    "@types/node": "^22.9.0",
+    "@vitejs/plugin-vue": "^5.1.4",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.4",
+    "vue-tsc": "^2.1.10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "vue-demi"]
+  }
+}
