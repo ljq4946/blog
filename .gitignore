@@ -18,3 +18,4 @@ frontend/apps/*/vite.config.d.ts
 # Local environment
 deploy/.env
 logs/
+.superpowers/
