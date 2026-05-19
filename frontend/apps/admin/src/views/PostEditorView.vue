@@ -63,7 +63,7 @@
           :media-assets="mediaAssets"
           :selected-cover="selectedCover"
           :save-status-text="editorStatusText"
-          :recovery-available="false"
+          :recovery-available="Boolean(recoverySnapshot)"
           @update:form="updateForm"
           @restore-recovery="restoreRecovery"
           @discard-recovery="discardRecovery"
@@ -81,7 +81,17 @@ import StarterKit from "@tiptap/starter-kit";
 import { EditorContent, useEditor } from "@tiptap/vue-3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
-import { postFormSnapshot, publishChecklist, toPostInput, validatePostForm, wordCountFromHtml, type PostForm } from "../features/posts/postForm";
+import {
+  postFormSnapshot,
+  postRecoveryKey,
+  postRecoverySnapshot,
+  publishChecklist,
+  toPostInput,
+  validatePostForm,
+  wordCountFromHtml,
+  type PostForm,
+  type PostRecoverySnapshot
+} from "../features/posts/postForm";
 import { adminApi } from "../lib/api";
 import PostPublishPanel from "./PostPublishPanel.vue";
 
@@ -111,6 +121,8 @@ const form = reactive<PostForm>({
   tagIds: []
 });
 const lastSavedSnapshot = ref(postFormSnapshot(form));
+const recoverySnapshot = ref<PostRecoverySnapshot | null>(null);
+const recoveryWritesReady = ref(false);
 
 const editor = useEditor({
   extensions: [StarterKit, Link.configure({ openOnClick: false }), Image],
@@ -127,6 +139,7 @@ const isDirty = computed(() => postFormSnapshot(form) !== lastSavedSnapshot.valu
 const wordCount = computed(() => wordCountFromHtml(form.contentHtml));
 const selectedCover = computed(() => mediaAssets.value.find((asset) => asset.id === form.coverMediaId) ?? null);
 const publishChecks = computed(() => publishChecklist(form));
+const recoveryKey = computed(() => postRecoveryKey(isNew.value ? null : route.params.id?.toString()));
 const hasBlockingPublishChecks = computed(() =>
   publishChecks.value.some((check) => check.level === "required" && !check.passed)
 );
@@ -155,6 +168,9 @@ watch(
         saveState.value = "idle";
       }
     }
+    if (recoveryWritesReady.value) {
+      writeRecoverySnapshot();
+    }
   }
 );
 
@@ -165,12 +181,74 @@ function syncSlug() {
 }
 
 function updateForm(nextForm: PostForm) {
-  Object.assign(form, nextForm);
+  const nextContentHtml = nextForm.contentHtml ?? "";
+  const shouldSyncEditorContent = nextContentHtml !== (form.contentHtml ?? "");
+  assignFormSnapshot(nextForm);
+  if (shouldSyncEditorContent) {
+    editor.value?.commands.setContent(form.contentHtml ?? "");
+  }
 }
 
-function restoreRecovery() {}
+function applyFormSnapshot(nextForm: PostForm) {
+  assignFormSnapshot(nextForm);
+  editor.value?.commands.setContent(form.contentHtml ?? "");
+}
 
-function discardRecovery() {}
+function assignFormSnapshot(nextForm: PostForm) {
+  Object.assign(form, {
+    title: nextForm.title ?? "",
+    slug: nextForm.slug ?? "",
+    summary: nextForm.summary ?? "",
+    contentHtml: nextForm.contentHtml ?? "",
+    coverMediaId: nextForm.coverMediaId ?? null,
+    status: nextForm.status ?? "DRAFT",
+    categoryId: nextForm.categoryId ?? null,
+    tagIds: nextForm.tagIds ?? [],
+    publishedAt: nextForm.publishedAt ?? null
+  });
+}
+
+function loadRecoverySnapshot() {
+  const stored = window.localStorage.getItem(recoveryKey.value);
+  if (!stored) {
+    recoverySnapshot.value = null;
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(stored) as PostRecoverySnapshot;
+    if (!parsed || typeof parsed.updatedAt !== "number" || !parsed.form) {
+      window.localStorage.removeItem(recoveryKey.value);
+      recoverySnapshot.value = null;
+      return;
+    }
+    recoverySnapshot.value = postFormSnapshot(parsed.form) !== lastSavedSnapshot.value ? parsed : null;
+  } catch {
+    window.localStorage.removeItem(recoveryKey.value);
+    recoverySnapshot.value = null;
+  }
+}
+
+function writeRecoverySnapshot() {
+  window.localStorage.setItem(recoveryKey.value, JSON.stringify(postRecoverySnapshot(form)));
+}
+
+function clearRecoverySnapshot() {
+  window.localStorage.removeItem(recoveryKey.value);
+  recoverySnapshot.value = null;
+}
+
+function restoreRecovery() {
+  if (!recoverySnapshot.value) {
+    return;
+  }
+  applyFormSnapshot(recoverySnapshot.value.form);
+  recoverySnapshot.value = null;
+}
+
+function discardRecovery() {
+  clearRecoverySnapshot();
+}
 
 function errorMessage(err: unknown) {
   return err instanceof Error ? err.message : "操作失败，请稍后重试";
@@ -208,6 +286,7 @@ async function save(status?: Post["status"]) {
       : await adminApi.updatePost(Number(route.params.id), toPostInput(form));
     refreshSavedSnapshot();
     saveState.value = "saved";
+    clearRecoverySnapshot();
     if (isNew.value && saved.id) {
       await router.replace(`/posts/${saved.id}`);
     }
@@ -271,7 +350,7 @@ onMounted(async () => {
   if (!isNew.value) {
     const current = (await adminApi.posts()).find((post: Post) => post.id === Number(route.params.id));
     if (current) {
-      Object.assign(form, {
+      applyFormSnapshot({
         title: current.title,
         slug: current.slug,
         summary: current.summary ?? "",
@@ -282,11 +361,12 @@ onMounted(async () => {
         tagIds: current.tags?.map((tag) => tag.id) ?? [],
         publishedAt: current.publishedAt ?? null
       });
-      editor.value?.commands.setContent(form.contentHtml ?? "");
     }
   }
   refreshSavedSnapshot();
   saveState.value = "idle";
+  loadRecoverySnapshot();
+  recoveryWritesReady.value = true;
 });
 
 onBeforeUnmount(() => {

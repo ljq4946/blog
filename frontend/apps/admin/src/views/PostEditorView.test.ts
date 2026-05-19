@@ -93,6 +93,7 @@ async function setPublishSlug(wrapper: ReturnType<typeof mountEditor>, slug: str
 
 describe("PostEditorView", () => {
   beforeEach(() => {
+    window.localStorage.clear();
     routeMock.params = {};
     pushMock.mockReset();
     replaceMock.mockReset();
@@ -122,6 +123,26 @@ describe("PostEditorView", () => {
     vi.stubGlobal("prompt", vi.fn(() => "https://example.com/image.png"));
   });
 
+  function setRecoverySnapshot() {
+    window.localStorage.setItem(
+      "post-editor:new",
+      JSON.stringify({
+        updatedAt: Date.now() - 1000,
+        form: {
+          title: "Recovered title",
+          slug: "recovered-title",
+          summary: "Recovered summary",
+          contentHtml: "<p>Recovered content</p>",
+          coverMediaId: null,
+          status: "DRAFT",
+          categoryId: null,
+          tagIds: [],
+          publishedAt: null
+        }
+      })
+    );
+  }
+
   it("renders the enhanced toolbar and writing metadata", async () => {
     const wrapper = mountEditor();
     await flushPromises();
@@ -144,6 +165,41 @@ describe("PostEditorView", () => {
     expect(wrapper.find(".publish-panel").exists()).toBe(true);
     expect(wrapper.text()).toContain("\u53d1\u5e03\u68c0\u67e5");
     expect(wrapper.text()).toContain("\u53d1\u5e03\u8bbe\u7f6e");
+  });
+
+  it("restores a newer local recovery draft", async () => {
+    setRecoverySnapshot();
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("恢复草稿");
+
+    await wrapper.find('[data-test="restore-recovery"]').trigger("click");
+    await flushPromises();
+
+    expect((wrapper.find('input[aria-label="标题"]').element as HTMLInputElement).value).toBe("Recovered title");
+  });
+
+  it("does not reset editor content when publish metadata changes without content changes", async () => {
+    const wrapper = mountEditor();
+    await flushPromises();
+    editorChain.setContent.mockClear();
+
+    await setPublishSlug(wrapper, "metadata-only");
+
+    expect(editorChain.setContent).not.toHaveBeenCalled();
+  });
+
+  it("discards a local recovery draft", async () => {
+    setRecoverySnapshot();
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    await wrapper.find('[data-test="discard-recovery"]').trigger("click");
+    await flushPromises();
+
+    expect(window.localStorage.getItem("post-editor:new")).toBeNull();
+    expect(wrapper.find('[data-test="restore-recovery"]').exists()).toBe(false);
   });
 
   it("toggles between edit and preview modes", async () => {
