@@ -1,0 +1,198 @@
+<template>
+  <aside class="publish-panel" aria-label="文章发布设置">
+    <section class="publish-card save-card">
+      <p class="card-kicker">保存状态</p>
+      <strong>{{ saveStatusText }}</strong>
+      <div v-if="recoveryAvailable" class="recovery-actions">
+        <el-button data-test="restore-recovery" type="warning" @click="emit('restore-recovery')">恢复草稿</el-button>
+        <el-button data-test="discard-recovery" @click="emit('discard-recovery')">丢弃恢复</el-button>
+      </div>
+    </section>
+
+    <section class="publish-card publish-checks">
+      <h2>发布检查</h2>
+      <ul>
+        <li v-for="check in checks" :key="check.key" :class="{ 'is-passed': check.passed }">
+          <span>{{ check.label }}</span>
+          <strong>{{ checkStateText(check) }}</strong>
+        </li>
+      </ul>
+    </section>
+
+    <section class="publish-card publish-settings">
+      <h2>发布设置</h2>
+      <div class="publish-form">
+        <el-form-item label="状态">
+          <el-select :model-value="form.status" @update:model-value="updateField('status', $event)">
+            <el-option label="草稿" value="DRAFT" />
+            <el-option label="已发布" value="PUBLISHED" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="URL 标识">
+          <el-input aria-label="URL 标识" :model-value="form.slug" @update:model-value="updateField('slug', $event)" />
+        </el-form-item>
+
+        <el-form-item label="摘要">
+          <el-input :model-value="form.summary" type="textarea" :rows="3" @update:model-value="updateField('summary', $event)" />
+        </el-form-item>
+
+        <el-form-item label="封面图">
+          <el-select :model-value="form.coverMediaId" clearable placeholder="选择媒体库图片" @update:model-value="updateField('coverMediaId', $event)">
+            <el-option v-for="asset in mediaAssets" :key="asset.id" :label="asset.originalName" :value="asset.id" />
+          </el-select>
+          <div class="cover-preview">
+            <img v-if="selectedCover" :src="selectedCover.url" :alt="selectedCover.originalName" />
+            <span v-else>未选择封面图</span>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="分类">
+          <el-select :model-value="form.categoryId" clearable placeholder="选择分类" @update:model-value="updateField('categoryId', $event)">
+            <el-option v-for="category in categories" :key="category.id" :label="category.name" :value="category.id" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="标签">
+          <el-select :model-value="form.tagIds" multiple placeholder="选择标签" @update:model-value="updateField('tagIds', $event)">
+            <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id" />
+          </el-select>
+        </el-form-item>
+      </div>
+    </section>
+  </aside>
+</template>
+
+<script setup lang="ts">
+import type { Category, MediaAsset, Tag } from "@blog/shared";
+import type { PostForm, PublishCheck } from "../features/posts/postForm";
+
+const props = defineProps<{
+  form: PostForm;
+  checks: PublishCheck[];
+  categories: Category[];
+  tags: Tag[];
+  mediaAssets: MediaAsset[];
+  selectedCover: MediaAsset | null;
+  saveStatusText: string;
+  recoveryAvailable: boolean;
+}>();
+
+const emit = defineEmits<{
+  "update:form": [form: PostForm];
+  "restore-recovery": [];
+  "discard-recovery": [];
+}>();
+
+function checkStateText(check: PublishCheck) {
+  if (check.passed) {
+    return "通过";
+  }
+  return check.level === "required" ? "必填" : "建议完善";
+}
+
+function updateField<K extends keyof PostForm>(key: K, value: PostForm[K]) {
+  emit("update:form", {
+    ...props.form,
+    [key]: value
+  });
+}
+</script>
+
+<style scoped>
+.publish-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.publish-card {
+  background: #fffaf0;
+  border: 2px solid var(--ink);
+  box-shadow: 6px 6px 0 rgba(17, 16, 13, 0.14);
+  padding: 14px;
+}
+
+.publish-card h2,
+.card-kicker {
+  font-family: "Archivo Black", "Arial Black", sans-serif;
+  font-size: 16px;
+  line-height: 1;
+  margin: 0 0 12px;
+}
+
+.card-kicker {
+  color: var(--blue);
+}
+
+.save-card strong {
+  display: block;
+  font-size: 15px;
+}
+
+.recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.recovery-actions .el-button {
+  margin-left: 0;
+}
+
+.publish-checks ul {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.publish-checks li {
+  align-items: center;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 9px 10px;
+}
+
+.publish-checks li strong {
+  color: var(--red);
+  font-size: 13px;
+}
+
+.publish-checks li.is-passed strong {
+  color: var(--blue);
+}
+
+.publish-form :deep(.el-form-item) {
+  margin-bottom: 14px;
+}
+
+.cover-preview {
+  align-items: center;
+  background:
+    repeating-linear-gradient(135deg, rgba(29, 88, 168, 0.12), rgba(29, 88, 168, 0.12) 8px, transparent 8px, transparent 16px),
+    #fffaf0;
+  border: 2px dashed var(--blue);
+  color: var(--blue);
+  display: grid;
+  font-weight: 800;
+  margin-top: 10px;
+  min-height: 92px;
+  overflow: hidden;
+  padding: 10px;
+  place-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.cover-preview img {
+  display: block;
+  max-height: 140px;
+  max-width: 100%;
+  object-fit: cover;
+}
+</style>
