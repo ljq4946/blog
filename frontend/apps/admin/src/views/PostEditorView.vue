@@ -82,6 +82,7 @@ import { EditorContent, useEditor } from "@tiptap/vue-3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import {
+  canAutosavePost,
   postFormSnapshot,
   postRecoveryKey,
   postRecoverySnapshot,
@@ -97,10 +98,17 @@ import PostPublishPanel from "./PostPublishPanel.vue";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 type EditorMode = "edit" | "preview";
+type SaveMode = "manual" | "autosave";
+let autosaveTimer: ReturnType<typeof window.setTimeout> | null = null;
+let isInternalRouteReplace = false;
+let isUnmounted = false;
 
 const route = useRoute();
 const router = useRouter();
-const isNew = computed(() => route.params.id === undefined);
+const createdPostId = ref<number | null>(null);
+const routePostId = computed(() => (route.params.id === undefined ? null : Number(route.params.id)));
+const currentPostId = computed(() => routePostId.value ?? createdPostId.value);
+const isNew = computed(() => currentPostId.value === null);
 const categories = ref<Category[]>([]);
 const tags = ref<Tag[]>([]);
 const mediaAssets = ref<MediaAsset[]>([]);
@@ -108,8 +116,11 @@ const errors = ref<string[]>([]);
 const saveError = ref("");
 const publishCheckError = ref("");
 const saveState = ref<SaveState>("idle");
+const saveMode = ref<SaveMode>("manual");
 const activeMode = ref<EditorMode>("edit");
 const lastSavedAt = ref("");
+const lastAutosavedAt = ref("");
+const lastPersistedStatus = ref<Post["status"]>("DRAFT");
 const form = reactive<PostForm>({
   title: "",
   slug: "",
@@ -136,10 +147,11 @@ const editor = useEditor({
 });
 
 const isDirty = computed(() => postFormSnapshot(form) !== lastSavedSnapshot.value);
+const isAutosaveDirty = computed(() => autosaveFormSnapshot() !== lastSavedSnapshot.value);
 const wordCount = computed(() => wordCountFromHtml(form.contentHtml));
 const selectedCover = computed(() => mediaAssets.value.find((asset) => asset.id === form.coverMediaId) ?? null);
 const publishChecks = computed(() => publishChecklist(form));
-const recoveryKey = computed(() => postRecoveryKey(isNew.value ? null : route.params.id?.toString()));
+const recoveryKey = computed(() => postRecoveryKey(currentPostId.value === null ? null : currentPostId.value.toString()));
 const hasBlockingPublishChecks = computed(() =>
   publishChecks.value.some((check) => check.level === "required" && !check.passed)
 );
@@ -152,7 +164,9 @@ const editorStatusText = computed(() => {
     return `保存失败 · ${wordCount.value} 字 · ${status}`;
   }
   if (saveState.value === "saved") {
-    return `已保存${lastSavedAt.value ? ` ${lastSavedAt.value}` : ""} · ${wordCount.value} 字 · ${status}`;
+    const savedLabel = saveMode.value === "autosave" ? "已自动保存" : "已保存";
+    const savedAt = saveMode.value === "autosave" ? lastAutosavedAt.value : lastSavedAt.value;
+    return `${savedLabel}${savedAt ? ` ${savedAt}` : ""} · ${wordCount.value} 字 · ${status}`;
   }
   return `未保存 · ${wordCount.value} 字 · ${status}`;
 });
@@ -170,6 +184,9 @@ watch(
     }
     if (recoveryWritesReady.value) {
       writeRecoverySnapshot();
+      if (isAutosaveDirty.value) {
+        queueAutosave();
+      }
     }
   }
 );
@@ -233,8 +250,8 @@ function writeRecoverySnapshot() {
   window.localStorage.setItem(recoveryKey.value, JSON.stringify(postRecoverySnapshot(form)));
 }
 
-function clearRecoverySnapshot() {
-  window.localStorage.removeItem(recoveryKey.value);
+function clearRecoverySnapshot(key = recoveryKey.value) {
+  window.localStorage.removeItem(key);
   recoverySnapshot.value = null;
 }
 
@@ -254,18 +271,28 @@ function errorMessage(err: unknown) {
   return err instanceof Error ? err.message : "操作失败，请稍后重试";
 }
 
-function refreshSavedSnapshot() {
-  lastSavedSnapshot.value = postFormSnapshot(form);
+function autosaveFormSnapshot() {
+  return postFormSnapshot({
+    ...form,
+    tagIds: [...form.tagIds],
+    status: lastPersistedStatus.value
+  });
+}
+
+function refreshSavedSnapshot(snapshot = postFormSnapshot(form), persistedStatus = form.status) {
+  lastSavedSnapshot.value = snapshot;
+  lastPersistedStatus.value = persistedStatus;
   lastSavedAt.value = new Intl.DateTimeFormat("zh-CN", {
     hour: "2-digit",
     minute: "2-digit"
   }).format(new Date());
 }
 
-async function save(status?: Post["status"]) {
+async function save(status?: Post["status"], mode: SaveMode = "manual") {
   saveError.value = "";
   publishCheckError.value = "";
   errors.value = [];
+  saveMode.value = mode;
   if (status === "PUBLISHED" && hasBlockingPublishChecks.value) {
     publishCheckError.value = "请先完成必填发布检查";
     saveState.value = "error";
@@ -274,31 +301,89 @@ async function save(status?: Post["status"]) {
   if (status) {
     form.status = status;
   }
+  const autosavePersistedStatus = mode === "autosave" ? lastPersistedStatus.value : form.status;
   errors.value = validatePostForm(form);
   if (errors.value.length) {
     return;
   }
 
   saveState.value = "saving";
+  const wasNew = isNew.value;
+  const recoveryKeyBeforeSave = recoveryKey.value;
+  const submittedForm: PostForm = {
+    ...form,
+    tagIds: [...form.tagIds],
+    status: autosavePersistedStatus
+  };
+  const submittedSnapshot = postFormSnapshot(submittedForm);
   try {
-    const saved = isNew.value
-      ? await adminApi.createPost(toPostInput(form))
-      : await adminApi.updatePost(Number(route.params.id), toPostInput(form));
-    refreshSavedSnapshot();
+    const input = toPostInput(submittedForm);
+    const saved = wasNew
+      ? await adminApi.createPost(input)
+      : await adminApi.updatePost(Number(currentPostId.value), input);
+    if (isUnmounted) {
+      return;
+    }
+    if (wasNew && saved.id) {
+      await replaceCreatedDraftRoute(saved.id);
+      if (isUnmounted) {
+        return;
+      }
+    }
+    if (recoveryKeyBeforeSave !== recoveryKey.value) {
+      window.localStorage.removeItem(recoveryKeyBeforeSave);
+    }
+    refreshSavedSnapshot(submittedSnapshot, submittedForm.status);
+    if (mode === "autosave") {
+      lastAutosavedAt.value = lastSavedAt.value;
+    }
+    if (autosaveFormSnapshot() !== submittedSnapshot) {
+      saveState.value = "idle";
+      writeRecoverySnapshot();
+      if (canAutosavePost(form, { isNew: isNew.value })) {
+        queueAutosave();
+      }
+      return;
+    }
+    if (postFormSnapshot(form) !== submittedSnapshot) {
+      saveState.value = "idle";
+      writeRecoverySnapshot();
+      return;
+    }
     saveState.value = "saved";
     clearRecoverySnapshot();
-    if (isNew.value && saved.id) {
-      await router.replace(`/posts/${saved.id}`);
-    }
   } catch (err) {
     saveState.value = "error";
-    saveError.value = errorMessage(err);
+    saveError.value = mode === "autosave" ? `自动保存失败：${errorMessage(err)}` : errorMessage(err);
   }
+}
+
+function queueAutosave() {
+  if (autosaveTimer) {
+    window.clearTimeout(autosaveTimer);
+  }
+  autosaveTimer = window.setTimeout(() => {
+    autosaveTimer = null;
+    if (saveState.value === "saving" || !isAutosaveDirty.value || !canAutosavePost(form, { isNew: isNew.value })) {
+      return;
+    }
+    void save(undefined, "autosave");
+  }, 1200);
 }
 
 function goBack() {
   if (confirmLeave()) {
     router.push("/posts");
+  }
+}
+
+async function replaceCreatedDraftRoute(postId: number) {
+  createdPostId.value = postId;
+  isInternalRouteReplace = true;
+  try {
+    await router.replace(`/posts/${postId}`);
+  } finally {
+    isInternalRouteReplace = false;
   }
 }
 
@@ -319,6 +404,9 @@ function insertImage() {
 }
 
 function confirmLeave() {
+  if (isInternalRouteReplace) {
+    return true;
+  }
   if (!isDirty.value) {
     return true;
   }
@@ -370,6 +458,10 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  isUnmounted = true;
+  if (autosaveTimer) {
+    window.clearTimeout(autosaveTimer);
+  }
   window.removeEventListener("beforeunload", handleBeforeUnload);
   editor.value?.destroy();
 });
