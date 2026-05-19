@@ -99,7 +99,7 @@ import PostPublishPanel from "./PostPublishPanel.vue";
 type SaveState = "idle" | "saving" | "saved" | "error";
 type EditorMode = "edit" | "preview";
 type SaveMode = "manual" | "autosave";
-let autosaveTimer: ReturnType<typeof window.setTimeout> | null = null;
+let autosaveTimer: number | null = null;
 let isInternalRouteReplace = false;
 let isUnmounted = false;
 
@@ -279,7 +279,7 @@ function autosaveFormSnapshot() {
   });
 }
 
-function refreshSavedSnapshot(snapshot = postFormSnapshot(form), persistedStatus = form.status) {
+function refreshSavedSnapshot(snapshot = postFormSnapshot(form), persistedStatus: Post["status"] = form.status ?? "DRAFT") {
   lastSavedSnapshot.value = snapshot;
   lastPersistedStatus.value = persistedStatus;
   lastSavedAt.value = new Intl.DateTimeFormat("zh-CN", {
@@ -301,7 +301,8 @@ async function save(status?: Post["status"], mode: SaveMode = "manual") {
   if (status) {
     form.status = status;
   }
-  const autosavePersistedStatus = mode === "autosave" ? lastPersistedStatus.value : form.status;
+  const autosavePersistedStatus: Post["status"] =
+    mode === "autosave" ? lastPersistedStatus.value : form.status ?? "DRAFT";
   errors.value = validatePostForm(form);
   if (errors.value.length) {
     return;
