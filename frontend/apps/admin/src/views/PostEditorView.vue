@@ -17,80 +17,57 @@
     <el-alert v-if="publishCheckError" type="error" :title="publishCheckError" :closable="false" />
 
     <el-form label-position="top" class="editor-form">
-      <div class="editor-primary-grid">
-        <div class="editor-main-fields">
+      <div class="writing-workbench">
+        <div class="writing-main">
           <el-form-item label="标题">
             <el-input v-model="form.title" aria-label="标题" @blur="syncSlug" />
           </el-form-item>
-          <div class="editor-inline-grid">
-            <el-form-item label="摘要">
-              <el-input v-model="form.summary" aria-label="摘要" type="textarea" :rows="3" />
-            </el-form-item>
-            <el-form-item label="URL 标识">
-              <el-input v-model="form.slug" aria-label="URL 标识" />
-            </el-form-item>
-          </div>
-        </div>
 
-        <el-form-item label="封面图" class="cover-field">
-          <el-select v-model="form.coverMediaId" clearable placeholder="选择媒体库图片">
-            <el-option v-for="asset in mediaAssets" :key="asset.id" :label="asset.originalName" :value="asset.id" />
-          </el-select>
-          <div class="cover-preview">
+          <div class="mode-actions">
+            <el-button data-test="edit-mode" :type="activeMode === 'edit' ? 'primary' : 'default'" @click="activeMode = 'edit'">编辑</el-button>
+            <el-button data-test="preview-mode" :type="activeMode === 'preview' ? 'primary' : 'default'" @click="activeMode = 'preview'">预览</el-button>
+          </div>
+
+          <template v-if="activeMode === 'edit'">
+            <div class="toolbar" aria-label="文章编辑工具栏">
+              <el-button @click="editor?.chain().focus().toggleBold().run()">B</el-button>
+              <el-button @click="editor?.chain().focus().toggleItalic().run()">I</el-button>
+              <el-button @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()">H2</el-button>
+              <el-button @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()">H3</el-button>
+              <el-button @click="editor?.chain().focus().toggleBulletList().run()">列表</el-button>
+              <el-button @click="editor?.chain().focus().toggleBlockquote().run()">引用</el-button>
+              <el-button @click="insertLink">链接</el-button>
+              <el-button @click="insertImage">图片</el-button>
+              <el-button @click="editor?.chain().focus().toggleCodeBlock().run()">代码</el-button>
+              <el-button @click="editor?.chain().focus().undo().run()">撤销</el-button>
+              <el-button @click="editor?.chain().focus().redo().run()">重做</el-button>
+            </div>
+
+            <EditorContent v-if="editor" class="editor-surface" :editor="editor" />
+          </template>
+
+          <article v-else class="editor-preview">
+            <p class="preview-kicker">文章预览</p>
+            <h2>{{ form.title || "未命名文章" }}</h2>
+            <p v-if="form.summary" class="preview-summary">{{ form.summary }}</p>
             <img v-if="selectedCover" :src="selectedCover.url" :alt="selectedCover.originalName" />
-            <span v-else>选择媒体库图片作为文章封面</span>
-          </div>
-        </el-form-item>
-      </div>
-
-      <div class="mode-actions">
-        <el-button data-test="edit-mode" :type="activeMode === 'edit' ? 'primary' : 'default'" @click="activeMode = 'edit'">编辑</el-button>
-        <el-button data-test="preview-mode" :type="activeMode === 'preview' ? 'primary' : 'default'" @click="activeMode = 'preview'">预览</el-button>
-      </div>
-
-      <template v-if="activeMode === 'edit'">
-        <div class="toolbar" aria-label="文章编辑工具栏">
-          <el-button @click="editor?.chain().focus().toggleBold().run()">B</el-button>
-          <el-button @click="editor?.chain().focus().toggleItalic().run()">I</el-button>
-          <el-button @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()">H2</el-button>
-          <el-button @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()">H3</el-button>
-          <el-button @click="editor?.chain().focus().toggleBulletList().run()">列表</el-button>
-          <el-button @click="editor?.chain().focus().toggleBlockquote().run()">引用</el-button>
-          <el-button @click="insertLink">链接</el-button>
-          <el-button @click="insertImage">图片</el-button>
-          <el-button @click="editor?.chain().focus().toggleCodeBlock().run()">代码</el-button>
-          <el-button @click="editor?.chain().focus().undo().run()">撤销</el-button>
-          <el-button @click="editor?.chain().focus().redo().run()">重做</el-button>
+            <div class="preview-content" v-html="form.contentHtml"></div>
+          </article>
         </div>
 
-        <EditorContent v-if="editor" class="editor-surface" :editor="editor" />
-      </template>
-
-      <article v-else class="editor-preview">
-        <p class="preview-kicker">文章预览</p>
-        <h2>{{ form.title || "未命名文章" }}</h2>
-        <p v-if="form.summary" class="preview-summary">{{ form.summary }}</p>
-        <img v-if="selectedCover" :src="selectedCover.url" :alt="selectedCover.originalName" />
-        <div class="preview-content" v-html="form.contentHtml"></div>
-      </article>
-
-      <div class="editor-meta-grid">
-        <el-form-item label="状态">
-          <el-select v-model="form.status">
-            <el-option label="草稿" value="DRAFT" />
-            <el-option label="已发布" value="PUBLISHED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="分类">
-          <el-select v-model="form.categoryId" clearable>
-            <el-option v-for="category in categories" :key="category.id" :label="category.name" :value="category.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-select v-model="form.tagIds" multiple>
-            <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id" />
-          </el-select>
-        </el-form-item>
+        <PostPublishPanel
+          :form="form"
+          :checks="publishChecks"
+          :categories="categories"
+          :tags="tags"
+          :media-assets="mediaAssets"
+          :selected-cover="selectedCover"
+          :save-status-text="editorStatusText"
+          :recovery-available="false"
+          @update:form="updateForm"
+          @restore-recovery="restoreRecovery"
+          @discard-recovery="discardRecovery"
+        />
       </div>
     </el-form>
   </section>
@@ -106,6 +83,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import { postFormSnapshot, publishChecklist, toPostInput, validatePostForm, wordCountFromHtml, type PostForm } from "../features/posts/postForm";
 import { adminApi } from "../lib/api";
+import PostPublishPanel from "./PostPublishPanel.vue";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 type EditorMode = "edit" | "preview";
@@ -185,6 +163,14 @@ function syncSlug() {
     form.slug = slugify(form.title);
   }
 }
+
+function updateForm(nextForm: PostForm) {
+  Object.assign(form, nextForm);
+}
+
+function restoreRecovery() {}
+
+function discardRecovery() {}
 
 function errorMessage(err: unknown) {
   return err instanceof Error ? err.message : "操作失败，请稍后重试";
@@ -342,56 +328,17 @@ onBeforeUnmount(() => {
   gap: 14px;
 }
 
-.editor-primary-grid {
+.writing-workbench {
+  align-items: start;
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
-  gap: 14px;
-  align-items: stretch;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
 }
 
-.editor-main-fields {
+.writing-main {
   display: grid;
-  gap: 10px;
-}
-
-.editor-inline-grid,
-.editor-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-}
-
-.editor-meta-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.cover-field :deep(.el-form-item__content) {
-  align-content: start;
-  display: grid;
-  gap: 10px;
-}
-
-.cover-preview {
-  align-items: center;
-  background:
-    repeating-linear-gradient(135deg, rgba(29, 88, 168, 0.12), rgba(29, 88, 168, 0.12) 8px, transparent 8px, transparent 16px),
-    #fffaf0;
-  border: 2px dashed var(--blue);
-  color: var(--blue);
-  display: grid;
-  font-weight: 800;
-  min-height: 92px;
-  overflow: hidden;
-  padding: 10px;
-  place-items: center;
-  text-align: center;
-}
-
-.cover-preview img {
-  display: block;
-  max-height: 140px;
-  max-width: 100%;
-  object-fit: cover;
+  min-width: 0;
 }
 
 .toolbar {
@@ -442,10 +389,8 @@ onBeforeUnmount(() => {
   margin-bottom: 0;
 }
 
-@media (max-width: 900px) {
-  .editor-primary-grid,
-  .editor-inline-grid,
-  .editor-meta-grid {
+@media (max-width: 980px) {
+  .writing-workbench {
     grid-template-columns: 1fr;
   }
 }

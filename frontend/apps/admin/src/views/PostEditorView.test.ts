@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import ElementPlus from "element-plus";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PostEditorView from "./PostEditorView.vue";
+import PostPublishPanel from "./PostPublishPanel.vue";
 
 const pushMock = vi.hoisted(() => vi.fn());
 const replaceMock = vi.hoisted(() => vi.fn());
@@ -83,6 +84,13 @@ function mountEditor() {
   });
 }
 
+async function setPublishSlug(wrapper: ReturnType<typeof mountEditor>, slug: string) {
+  const publishPanel = wrapper.findComponent(PostPublishPanel);
+  const slugInput = publishPanel.find('input[aria-label="URL 标识"]');
+  await slugInput.setValue(slug);
+  await flushPromises();
+}
+
 describe("PostEditorView", () => {
   beforeEach(() => {
     routeMock.params = {};
@@ -125,6 +133,17 @@ describe("PostEditorView", () => {
     expect(wrapper.text()).toContain("代码");
     expect(wrapper.text()).toContain("撤销");
     expect(wrapper.text()).toContain("重做");
+  });
+
+  it("renders the writing workbench with the publish panel", async () => {
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    expect(wrapper.find(".writing-workbench").exists()).toBe(true);
+    expect(wrapper.find(".writing-main").exists()).toBe(true);
+    expect(wrapper.find(".publish-panel").exists()).toBe(true);
+    expect(wrapper.text()).toContain("\u53d1\u5e03\u68c0\u67e5");
+    expect(wrapper.text()).toContain("\u53d1\u5e03\u8bbe\u7f6e");
   });
 
   it("toggles between edit and preview modes", async () => {
@@ -170,7 +189,7 @@ describe("PostEditorView", () => {
     await flushPromises();
 
     await wrapper.find('input[aria-label="标题"]').setValue("Hello");
-    await wrapper.find('input[aria-label="URL 标识"]').setValue("hello");
+    await setPublishSlug(wrapper, "hello");
     await wrapper.find('[data-test="save-draft"]').trigger("click");
     await flushPromises();
 
@@ -185,7 +204,7 @@ describe("PostEditorView", () => {
     await flushPromises();
 
     await wrapper.find('input[aria-label="标题"]').setValue("Hello");
-    await wrapper.find('input[aria-label="URL 标识"]').setValue("hello");
+    await setPublishSlug(wrapper, "hello");
     await wrapper.find('[data-test="save-draft"]').trigger("click");
     await flushPromises();
 
@@ -198,7 +217,7 @@ describe("PostEditorView", () => {
     await flushPromises();
 
     await wrapper.find('input[aria-label="标题"]').setValue("Hello");
-    await wrapper.find('input[aria-label="URL 标识"]').setValue("hello");
+    await setPublishSlug(wrapper, "hello");
     await wrapper.find('[data-test="publish-post"]').trigger("click");
     await flushPromises();
 
@@ -217,7 +236,7 @@ describe("PostEditorView", () => {
     expect(wrapper.text()).toContain("请填写 URL 标识");
 
     await wrapper.find('input[aria-label="标题"]').setValue("Hello");
-    await wrapper.find('input[aria-label="URL 标识"]').setValue("hello");
+    await setPublishSlug(wrapper, "hello");
     await wrapper.find('[data-test="publish-post"]').trigger("click");
     await flushPromises();
 

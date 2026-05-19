@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import ElementPlus, { ElInput, ElSelect } from "element-plus";
+import ElementPlus, { ElSelect } from "element-plus";
 import { describe, expect, it } from "vitest";
 import PostPublishPanel from "./PostPublishPanel.vue";
 import type { Category, MediaAsset, Tag } from "@blog/shared";
@@ -81,9 +81,11 @@ describe("PostPublishPanel", () => {
   it("emits merged form updates when publish fields change", async () => {
     const wrapper = mountPanel();
     const selects = wrapper.findAllComponents(ElSelect);
-    const inputs = wrapper.findAllComponents(ElInput);
+    const slugInput = wrapper.find('input[aria-label="URL 标识"]');
 
-    await inputs[0].vm.$emit("update:modelValue", "updated-title");
+    expect(slugInput.exists()).toBe(true);
+
+    await slugInput.setValue("updated-title");
     await selects[0].vm.$emit("update:modelValue", "PUBLISHED");
     await selects[3].vm.$emit("update:modelValue", [2, 3]);
 

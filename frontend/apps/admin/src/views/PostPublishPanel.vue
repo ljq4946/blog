@@ -30,7 +30,7 @@
         </el-form-item>
 
         <el-form-item label="URL 标识">
-          <el-input :model-value="form.slug" @update:model-value="updateField('slug', $event)" />
+          <el-input aria-label="URL 标识" :model-value="form.slug" @update:model-value="updateField('slug', $event)" />
         </el-form-item>
 
         <el-form-item label="摘要">
