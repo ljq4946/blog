@@ -14,6 +14,7 @@
 
     <el-alert v-if="errors.length" type="error" :title="errors.join(', ')" :closable="false" />
     <el-alert v-if="saveError" type="error" :title="saveError" :closable="false" />
+    <el-alert v-if="publishCheckError" type="error" :title="publishCheckError" :closable="false" />
 
     <el-form label-position="top" class="editor-form">
       <div class="editor-primary-grid">
@@ -42,21 +43,36 @@
         </el-form-item>
       </div>
 
-      <div class="toolbar" aria-label="文章编辑工具栏">
-        <el-button @click="editor?.chain().focus().toggleBold().run()">B</el-button>
-        <el-button @click="editor?.chain().focus().toggleItalic().run()">I</el-button>
-        <el-button @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()">H2</el-button>
-        <el-button @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()">H3</el-button>
-        <el-button @click="editor?.chain().focus().toggleBulletList().run()">列表</el-button>
-        <el-button @click="editor?.chain().focus().toggleBlockquote().run()">引用</el-button>
-        <el-button @click="insertLink">链接</el-button>
-        <el-button @click="insertImage">图片</el-button>
-        <el-button @click="editor?.chain().focus().toggleCodeBlock().run()">代码</el-button>
-        <el-button @click="editor?.chain().focus().undo().run()">撤销</el-button>
-        <el-button @click="editor?.chain().focus().redo().run()">重做</el-button>
+      <div class="mode-actions">
+        <el-button data-test="edit-mode" :type="activeMode === 'edit' ? 'primary' : 'default'" @click="activeMode = 'edit'">编辑</el-button>
+        <el-button data-test="preview-mode" :type="activeMode === 'preview' ? 'primary' : 'default'" @click="activeMode = 'preview'">预览</el-button>
       </div>
 
-      <EditorContent v-if="editor" class="editor-surface" :editor="editor" />
+      <template v-if="activeMode === 'edit'">
+        <div class="toolbar" aria-label="文章编辑工具栏">
+          <el-button @click="editor?.chain().focus().toggleBold().run()">B</el-button>
+          <el-button @click="editor?.chain().focus().toggleItalic().run()">I</el-button>
+          <el-button @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()">H2</el-button>
+          <el-button @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()">H3</el-button>
+          <el-button @click="editor?.chain().focus().toggleBulletList().run()">列表</el-button>
+          <el-button @click="editor?.chain().focus().toggleBlockquote().run()">引用</el-button>
+          <el-button @click="insertLink">链接</el-button>
+          <el-button @click="insertImage">图片</el-button>
+          <el-button @click="editor?.chain().focus().toggleCodeBlock().run()">代码</el-button>
+          <el-button @click="editor?.chain().focus().undo().run()">撤销</el-button>
+          <el-button @click="editor?.chain().focus().redo().run()">重做</el-button>
+        </div>
+
+        <EditorContent v-if="editor" class="editor-surface" :editor="editor" />
+      </template>
+
+      <article v-else class="editor-preview">
+        <p class="preview-kicker">文章预览</p>
+        <h2>{{ form.title || "未命名文章" }}</h2>
+        <p v-if="form.summary" class="preview-summary">{{ form.summary }}</p>
+        <img v-if="selectedCover" :src="selectedCover.url" :alt="selectedCover.originalName" />
+        <div class="preview-content" v-html="form.contentHtml"></div>
+      </article>
 
       <div class="editor-meta-grid">
         <el-form-item label="状态">
@@ -88,10 +104,11 @@ import StarterKit from "@tiptap/starter-kit";
 import { EditorContent, useEditor } from "@tiptap/vue-3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
-import { postFormSnapshot, toPostInput, validatePostForm, wordCountFromHtml, type PostForm } from "../features/posts/postForm";
+import { postFormSnapshot, publishChecklist, toPostInput, validatePostForm, wordCountFromHtml, type PostForm } from "../features/posts/postForm";
 import { adminApi } from "../lib/api";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
+type EditorMode = "edit" | "preview";
 
 const route = useRoute();
 const router = useRouter();
@@ -101,7 +118,9 @@ const tags = ref<Tag[]>([]);
 const mediaAssets = ref<MediaAsset[]>([]);
 const errors = ref<string[]>([]);
 const saveError = ref("");
+const publishCheckError = ref("");
 const saveState = ref<SaveState>("idle");
+const activeMode = ref<EditorMode>("edit");
 const lastSavedAt = ref("");
 const form = reactive<PostForm>({
   title: "",
@@ -129,6 +148,10 @@ const editor = useEditor({
 const isDirty = computed(() => postFormSnapshot(form) !== lastSavedSnapshot.value);
 const wordCount = computed(() => wordCountFromHtml(form.contentHtml));
 const selectedCover = computed(() => mediaAssets.value.find((asset) => asset.id === form.coverMediaId) ?? null);
+const publishChecks = computed(() => publishChecklist(form));
+const hasBlockingPublishChecks = computed(() =>
+  publishChecks.value.some((check) => check.level === "required" && !check.passed)
+);
 const editorStatusText = computed(() => {
   const status = form.status === "PUBLISHED" ? "已发布" : "草稿";
   if (saveState.value === "saving") {
@@ -146,8 +169,13 @@ const editorStatusText = computed(() => {
 watch(
   () => postFormSnapshot(form),
   (snapshot) => {
-    if (snapshot !== lastSavedSnapshot.value && saveState.value === "saved") {
-      saveState.value = "idle";
+    if (snapshot !== lastSavedSnapshot.value) {
+      if (publishCheckError.value) {
+        publishCheckError.value = "";
+      }
+      if (saveState.value === "saved" || (saveState.value === "error" && !saveError.value)) {
+        saveState.value = "idle";
+      }
     }
   }
 );
@@ -171,11 +199,18 @@ function refreshSavedSnapshot() {
 }
 
 async function save(status?: Post["status"]) {
+  saveError.value = "";
+  publishCheckError.value = "";
+  errors.value = [];
+  if (status === "PUBLISHED" && hasBlockingPublishChecks.value) {
+    publishCheckError.value = "请先完成必填发布检查";
+    saveState.value = "error";
+    return;
+  }
   if (status) {
     form.status = status;
   }
   errors.value = validatePostForm(form);
-  saveError.value = "";
   if (errors.value.length) {
     return;
   }
@@ -286,6 +321,7 @@ onBeforeUnmount(() => {
 }
 
 .editor-actions,
+.mode-actions,
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -366,6 +402,44 @@ onBeforeUnmount(() => {
 
 .toolbar .el-button {
   margin-left: 0;
+}
+
+.mode-actions {
+  justify-content: flex-end;
+}
+
+.editor-preview {
+  background: #ffffff;
+  border: 2px solid var(--ink);
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.preview-kicker {
+  color: var(--blue);
+  font-weight: 900;
+  margin: 0;
+}
+
+.editor-preview h2,
+.preview-summary {
+  margin: 0;
+}
+
+.editor-preview img {
+  display: block;
+  max-height: 260px;
+  max-width: 100%;
+  object-fit: cover;
+}
+
+.preview-content :deep(p:first-child) {
+  margin-top: 0;
+}
+
+.preview-content :deep(p:last-child) {
+  margin-bottom: 0;
 }
 
 @media (max-width: 900px) {

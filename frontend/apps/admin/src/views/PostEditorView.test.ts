@@ -127,6 +127,43 @@ describe("PostEditorView", () => {
     expect(wrapper.text()).toContain("重做");
   });
 
+  it("toggles between edit and preview modes", async () => {
+    routeMock.params = { id: "5" };
+    postsMock.mockResolvedValue([
+      {
+        id: 5,
+        title: "Preview title",
+        slug: "preview-title",
+        summary: "Preview summary",
+        contentHtml: "<p>Preview body</p>",
+        coverMediaId: 7,
+        status: "DRAFT",
+        category: null,
+        tags: [],
+        publishedAt: null
+      }
+    ]);
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    await wrapper.find('[data-test="preview-mode"]').trigger("click");
+    await flushPromises();
+
+    expect(wrapper.find(".editor-preview").exists()).toBe(true);
+    expect(wrapper.text()).toContain("文章预览");
+    expect(wrapper.text()).toContain("Preview title");
+    expect(wrapper.text()).toContain("Preview summary");
+    expect(wrapper.text()).toContain("Preview body");
+    expect(wrapper.find(".editor-preview img").attributes("src")).toBe("/uploads/cover.png");
+    expect(wrapper.find(".toolbar").exists()).toBe(false);
+
+    await wrapper.find('[data-test="edit-mode"]').trigger("click");
+    await flushPromises();
+
+    expect(wrapper.find(".editor-preview").exists()).toBe(false);
+    expect(wrapper.find(".toolbar").exists()).toBe(true);
+  });
+
   it("stays on the editor and shows save feedback after creating a draft", async () => {
     createPostMock.mockResolvedValue({ id: 12 });
     const wrapper = mountEditor();
@@ -154,5 +191,39 @@ describe("PostEditorView", () => {
 
     expect(wrapper.text()).toContain("Slug already exists");
     expect(pushMock).not.toHaveBeenCalledWith("/posts");
+  });
+
+  it("blocks publishing when required publish checks fail", async () => {
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    await wrapper.find('input[aria-label="标题"]').setValue("Hello");
+    await wrapper.find('input[aria-label="URL 标识"]').setValue("hello");
+    await wrapper.find('[data-test="publish-post"]').trigger("click");
+    await flushPromises();
+
+    expect(createPostMock).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("请先完成必填发布检查");
+  });
+
+  it("clears obsolete validation errors when publishing fails required checks", async () => {
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    await wrapper.find('[data-test="save-draft"]').trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("请填写标题");
+    expect(wrapper.text()).toContain("请填写 URL 标识");
+
+    await wrapper.find('input[aria-label="标题"]').setValue("Hello");
+    await wrapper.find('input[aria-label="URL 标识"]').setValue("hello");
+    await wrapper.find('[data-test="publish-post"]').trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("请填写标题");
+    expect(wrapper.text()).not.toContain("请填写 URL 标识");
+    expect(wrapper.text()).toContain("请先完成必填发布检查");
+    expect(createPostMock).not.toHaveBeenCalled();
   });
 });
