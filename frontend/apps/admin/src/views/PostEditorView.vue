@@ -30,17 +30,17 @@
 
           <template v-if="activeMode === 'edit'">
             <div class="toolbar" aria-label="文章编辑工具栏">
-              <el-button @click="editor?.chain().focus().toggleBold().run()">B</el-button>
-              <el-button @click="editor?.chain().focus().toggleItalic().run()">I</el-button>
-              <el-button @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()">H2</el-button>
-              <el-button @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()">H3</el-button>
-              <el-button @click="editor?.chain().focus().toggleBulletList().run()">列表</el-button>
-              <el-button @click="editor?.chain().focus().toggleBlockquote().run()">引用</el-button>
-              <el-button @click="insertLink">链接</el-button>
-              <el-button @click="insertImage">图片</el-button>
-              <el-button @click="editor?.chain().focus().toggleCodeBlock().run()">代码</el-button>
-              <el-button @click="editor?.chain().focus().undo().run()">撤销</el-button>
-              <el-button @click="editor?.chain().focus().redo().run()">重做</el-button>
+              <el-button aria-label="加粗" @click="editor?.chain().focus().toggleBold().run()">B</el-button>
+              <el-button aria-label="斜体" @click="editor?.chain().focus().toggleItalic().run()">I</el-button>
+              <el-button aria-label="二级标题" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()">H2</el-button>
+              <el-button aria-label="三级标题" @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()">H3</el-button>
+              <el-button aria-label="项目列表" @click="editor?.chain().focus().toggleBulletList().run()">列表</el-button>
+              <el-button aria-label="引用" @click="editor?.chain().focus().toggleBlockquote().run()">引用</el-button>
+              <el-button aria-label="插入链接" @click="insertLink">链接</el-button>
+              <el-button aria-label="插入图片" @click="insertImage">图片</el-button>
+              <el-button aria-label="代码块" @click="editor?.chain().focus().toggleCodeBlock().run()">代码</el-button>
+              <el-button aria-label="撤销" @click="editor?.chain().focus().undo().run()">撤销</el-button>
+              <el-button aria-label="重做" @click="editor?.chain().focus().redo().run()">重做</el-button>
             </div>
 
             <EditorContent v-if="editor" class="editor-surface" :editor="editor" />
@@ -79,7 +79,7 @@ import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
 import { EditorContent, useEditor } from "@tiptap/vue-3";
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import {
   canAutosavePost,
@@ -121,6 +121,7 @@ const activeMode = ref<EditorMode>("edit");
 const lastSavedAt = ref("");
 const lastAutosavedAt = ref("");
 const lastPersistedStatus = ref<Post["status"]>("DRAFT");
+const serverSnapshotUpdatedAt = ref(0);
 const form = reactive<PostForm>({
   title: "",
   slug: "",
@@ -239,7 +240,15 @@ function loadRecoverySnapshot() {
       recoverySnapshot.value = null;
       return;
     }
-    recoverySnapshot.value = postFormSnapshot(parsed.form) !== lastSavedSnapshot.value ? parsed : null;
+    if (
+      postFormSnapshot(parsed.form) === lastSavedSnapshot.value ||
+      (serverSnapshotUpdatedAt.value > 0 && parsed.updatedAt <= serverSnapshotUpdatedAt.value)
+    ) {
+      window.localStorage.removeItem(recoveryKey.value);
+      recoverySnapshot.value = null;
+      return;
+    }
+    recoverySnapshot.value = parsed;
   } catch {
     window.localStorage.removeItem(recoveryKey.value);
     recoverySnapshot.value = null;
@@ -450,11 +459,13 @@ onMounted(async () => {
         tagIds: current.tags?.map((tag) => tag.id) ?? [],
         publishedAt: current.publishedAt ?? null
       });
+      serverSnapshotUpdatedAt.value = current.updatedAt ? Date.parse(current.updatedAt) : 0;
     }
   }
   refreshSavedSnapshot();
   saveState.value = "idle";
   loadRecoverySnapshot();
+  await nextTick();
   recoveryWritesReady.value = true;
 });
 

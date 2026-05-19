@@ -15,6 +15,7 @@ const postsMock = vi.hoisted(() => vi.fn());
 const categoriesMock = vi.hoisted(() => vi.fn());
 const tagsMock = vi.hoisted(() => vi.fn());
 const mediaMock = vi.hoisted(() => vi.fn());
+const now = Date.parse("2026-05-19T12:00:00Z");
 const editorChain = vi.hoisted(() => {
   const chain = {
     focus: vi.fn(),
@@ -109,6 +110,7 @@ async function updatePublishForm(wrapper: ReturnType<typeof mountEditor>, patch:
 describe("PostEditorView", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.setSystemTime(now);
     window.localStorage.clear();
     routeMock.params = {};
     pushMock.mockReset();
@@ -152,11 +154,11 @@ describe("PostEditorView", () => {
     vi.useRealTimers();
   });
 
-  function setRecoverySnapshot() {
+  function setRecoverySnapshot(updatedAt = now - 1000, key = "post-editor:new") {
     window.localStorage.setItem(
-      "post-editor:new",
+      key,
       JSON.stringify({
-        updatedAt: Date.now() - 1000,
+        updatedAt,
         form: {
           title: "Recovered title",
           slug: "recovered-title",
@@ -183,6 +185,10 @@ describe("PostEditorView", () => {
     expect(wrapper.text()).toContain("代码");
     expect(wrapper.text()).toContain("撤销");
     expect(wrapper.text()).toContain("重做");
+    expect(wrapper.find('button[aria-label="加粗"]').exists()).toBe(true);
+    expect(wrapper.find('button[aria-label="斜体"]').exists()).toBe(true);
+    expect(wrapper.find('button[aria-label="二级标题"]').exists()).toBe(true);
+    expect(wrapper.find('button[aria-label="撤销"]').exists()).toBe(true);
   });
 
   it("renders the writing workbench with the publish panel", async () => {
@@ -207,6 +213,31 @@ describe("PostEditorView", () => {
     await flushPromises();
 
     expect((wrapper.find('input[aria-label="标题"]').element as HTMLInputElement).value).toBe("Recovered title");
+  });
+
+  it("ignores and clears a recovery draft older than the loaded server post", async () => {
+    routeMock.params = { id: "5" };
+    postsMock.mockResolvedValue([
+      {
+        id: 5,
+        title: "Server title",
+        slug: "server-title",
+        summary: "Server summary",
+        contentHtml: "<p>Server content</p>",
+        coverMediaId: null,
+        status: "DRAFT",
+        category: null,
+        tags: [],
+        updatedAt: new Date(now).toISOString(),
+        publishedAt: null
+      }
+    ]);
+    setRecoverySnapshot(now - 1000, "post-editor:5");
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    expect(wrapper.find('[data-test="restore-recovery"]').exists()).toBe(false);
+    expect(window.localStorage.getItem("post-editor:5")).toBeNull();
   });
 
   it("does not reset editor content when publish metadata changes without content changes", async () => {
