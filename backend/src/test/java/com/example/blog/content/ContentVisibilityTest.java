@@ -3,6 +3,8 @@ package com.example.blog.content;
 import com.example.blog.TestApplicationProperties;
 import com.example.blog.category.Category;
 import com.example.blog.category.CategoryRepository;
+import com.example.blog.media.MediaAsset;
+import com.example.blog.media.MediaAssetRepository;
 import com.example.blog.post.Post;
 import com.example.blog.post.PostRepository;
 import com.example.blog.post.PostStatus;
@@ -41,12 +43,15 @@ class ContentVisibilityTest {
   CategoryRepository categories;
   @Autowired
   TagRepository tags;
+  @Autowired
+  MediaAssetRepository media;
 
   @BeforeEach
   void setUp() {
     posts.deleteAll();
     tags.deleteAll();
     categories.deleteAll();
+    media.deleteAll();
   }
 
   @Test
@@ -107,6 +112,25 @@ class ContentVisibilityTest {
     mvc.perform(get("/api/v1/archive"))
         .andExpect(status().isOk())
         .andExpect(content().string(containsString("Safe post")));
+  }
+
+  @Test
+  void archiveIncludesCoverUrlAndTaxonomyMetadata() throws Exception {
+    Category essays = categories.save(new Category("Essays", "essays", "", 0));
+    Tag craft = tags.save(new Tag("Craft", "craft"));
+    MediaAsset cover = media.save(new MediaAsset("cover.png", "cover.png", "/uploads/cover.png", "image/png", 128L, 80, 80));
+    Post published = new Post("Published", "published-post", "Visible", "<p>Published</p>", PostStatus.PUBLISHED);
+    published.setCategory(essays);
+    published.setTags(Set.of(craft));
+    published.setCoverMediaId(cover.getId());
+    published.setPublishedAt(Instant.parse("2026-05-17T01:00:00Z"));
+    posts.save(published);
+
+    mvc.perform(get("/api/v1/archive"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].posts[0].coverMediaUrl").value("/uploads/cover.png"))
+        .andExpect(jsonPath("$[0].posts[0].category.name").value("Essays"))
+        .andExpect(jsonPath("$[0].posts[0].tags[0].name").value("Craft"));
   }
 
   private String login() throws Exception {

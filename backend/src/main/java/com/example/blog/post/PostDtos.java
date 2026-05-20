@@ -32,6 +32,7 @@ public final class PostDtos {
       String summary,
       String contentHtml,
       Long coverMediaId,
+      String coverMediaUrl,
       String status,
       CategorySummary category,
       List<TagSummary> tags,
@@ -39,6 +40,10 @@ public final class PostDtos {
       Instant updatedAt,
       Instant publishedAt) {
     public static PostResponse from(Post post) {
+      return from(post, null);
+    }
+
+    public static PostResponse from(Post post, String coverMediaUrl) {
       return new PostResponse(
           post.getId(),
           post.getTitle(),
@@ -46,6 +51,7 @@ public final class PostDtos {
           post.getSummary(),
           post.getContentHtml(),
           post.getCoverMediaId(),
+          coverMediaUrl,
           post.getStatus().name(),
           post.getCategory() == null ? null : CategorySummary.from(post.getCategory()),
           post.getTags().stream()

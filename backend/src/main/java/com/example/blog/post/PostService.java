@@ -2,6 +2,7 @@ package com.example.blog.post;
 
 import com.example.blog.category.Category;
 import com.example.blog.category.CategoryRepository;
+import com.example.blog.media.MediaAssetRepository;
 import com.example.blog.security.html.HtmlSanitizer;
 import com.example.blog.tag.Tag;
 import com.example.blog.tag.TagRepository;
@@ -26,18 +27,21 @@ public class PostService {
   private final PostRepository posts;
   private final CategoryRepository categories;
   private final TagRepository tags;
+  private final MediaAssetRepository media;
   private final HtmlSanitizer sanitizer;
 
-  public PostService(PostRepository posts, CategoryRepository categories, TagRepository tags, HtmlSanitizer sanitizer) {
+  public PostService(PostRepository posts, CategoryRepository categories, TagRepository tags,
+      MediaAssetRepository media, HtmlSanitizer sanitizer) {
     this.posts = posts;
     this.categories = categories;
     this.tags = tags;
+    this.media = media;
     this.sanitizer = sanitizer;
   }
 
   @Transactional(readOnly = true)
   public List<PostResponse> adminList() {
-    return posts.findAllForAdmin().stream().map(PostResponse::from).toList();
+    return posts.findAllForAdmin().stream().map(this::response).toList();
   }
 
   @Transactional(readOnly = true)
@@ -47,14 +51,14 @@ public class PostService {
             .orElse(true))
         .filter(post -> tagSlug.map(slug -> post.getTags().stream().anyMatch(tag -> slug.equals(tag.getSlug())))
             .orElse(true))
-        .map(PostResponse::from)
+        .map(this::response)
         .toList();
   }
 
   @Transactional(readOnly = true)
   public PostResponse publicDetail(String slug) {
     return posts.findBySlugAndStatus(slug, PostStatus.PUBLISHED)
-        .map(PostResponse::from)
+        .map(this::response)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
   }
 
@@ -64,7 +68,7 @@ public class PostService {
         .collect(Collectors.groupingBy(
             post -> ARCHIVE_MONTH.format(post.getPublishedAt() == null ? post.getCreatedAt() : post.getPublishedAt()),
             LinkedHashMap::new,
-            Collectors.mapping(PostResponse::from, Collectors.toList())))
+            Collectors.mapping(this::response, Collectors.toList())))
         .entrySet()
         .stream()
         .map(entry -> new ArchiveMonth(entry.getKey(), entry.getValue()))
@@ -75,14 +79,14 @@ public class PostService {
   public PostResponse create(PostRequest request) {
     Post post = new Post(request.title(), request.slug(), request.summary(), "", PostStatus.DRAFT);
     apply(post, request);
-    return PostResponse.from(posts.save(post));
+    return response(posts.save(post));
   }
 
   @Transactional
   public PostResponse update(Long id, PostRequest request) {
     Post post = posts.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     apply(post, request);
-    return PostResponse.from(posts.save(post));
+    return response(posts.save(post));
   }
 
   @Transactional
@@ -117,5 +121,17 @@ public class PostService {
       throw new IllegalArgumentException(field + " is required");
     }
     return value;
+  }
+
+  private PostResponse response(Post post) {
+    return PostResponse.from(post, coverMediaUrl(post));
+  }
+
+  private String coverMediaUrl(Post post) {
+    Long coverMediaId = post.getCoverMediaId();
+    if (coverMediaId == null) {
+      return null;
+    }
+    return media.findById(coverMediaId).map(asset -> asset.getUrl()).orElse(null);
   }
 }

@@ -11,10 +11,9 @@
     <section class="content-band">
       <div class="section-head">
         <h2>最新文章</h2>
-        <RouterLink to="/posts">全部文章</RouterLink>
       </div>
       <div v-if="posts.length" class="post-grid">
-        <PostCard v-for="post in posts.slice(0, 6)" :key="post.id" :post="post" />
+        <PostCard v-for="post in posts.slice(0, 3)" :key="post.id" :post="post" />
       </div>
       <EmptyState v-else title="暂无已发布文章" />
     </section>
