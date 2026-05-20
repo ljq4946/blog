@@ -13,6 +13,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 import static org.hamcrest.Matchers.containsString;
@@ -35,7 +36,7 @@ class MediaControllerTest {
 
   @DynamicPropertySource
   static void uploadProperties(DynamicPropertyRegistry registry) {
-    registry.add("app.upload.dir", () -> uploadDir.toString());
+    registry.add("app.upload.dir", () -> uploadDir.resolve("media").toString());
   }
 
   @Autowired
@@ -71,6 +72,28 @@ class MediaControllerTest {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andExpect(content().string(not(containsString("note.txt"))));
+  }
+
+  @Test
+  void uploadedMediaIsServedFromPublicUploadsPath() throws Exception {
+    String token = login();
+    MockMultipartFile file = new MockMultipartFile(
+        "file", "cover.txt", "text/plain", "hello cover".getBytes(StandardCharsets.UTF_8));
+
+    String response = mvc.perform(multipart("/api/v1/admin/media")
+            .file(file)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.url").value(containsString("/uploads/")))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    String url = response.replaceAll("^.*\"url\"\\s*:\\s*\"([^\"]+)\".*$", "$1");
+
+    mvc.perform(get(url))
+        .andExpect(status().isOk())
+        .andExpect(content().string("hello cover"));
   }
 
   @Test
