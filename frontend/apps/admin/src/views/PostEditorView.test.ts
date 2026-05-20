@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import ElementPlus from "element-plus";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PostForm } from "../features/posts/postForm";
+import postEditorSource from "./PostEditorView.vue?raw";
 import PostEditorView from "./PostEditorView.vue";
 import PostPublishPanel from "./PostPublishPanel.vue";
 
@@ -73,7 +74,7 @@ vi.mock("@tiptap/vue-3", async () => {
     destroy: vi.fn()
   };
   return {
-    EditorContent: { template: '<div class="editor-surface" />' },
+    EditorContent: { template: '<div class="editor-surface"><div class="tiptap ProseMirror" role="textbox" /></div>' },
     useEditor: () => shallowRef(editor)
   };
 });
@@ -202,6 +203,19 @@ describe("PostEditorView", () => {
     expect(wrapper.text()).toContain("\u53d1\u5e03\u8bbe\u7f6e");
   });
 
+  it("stretches the editable textbox to the editor surface", async () => {
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    const textbox = wrapper.find(".editor-surface .ProseMirror");
+
+    expect(textbox.exists()).toBe(true);
+    expect(postEditorSource).toMatch(/\.editor-surface\s*{[^}]*display:\s*grid;[^}]*padding:\s*0;/s);
+    expect(postEditorSource).toMatch(
+      /\.editor-surface\s+:deep\(\.ProseMirror\)\s*{[^}]*min-height:\s*100%;[^}]*padding:\s*14px;/s
+    );
+  });
+
   it("restores a newer local recovery draft", async () => {
     setRecoverySnapshot();
     const wrapper = mountEditor();
@@ -314,177 +328,26 @@ describe("PostEditorView", () => {
     expect(wrapper.text()).toContain("已保存");
   });
 
-  it("autosaves a valid new draft after edits settle", async () => {
-    createPostMock.mockResolvedValue({ id: 22 });
+  it("does not autosave a valid new draft after edits settle", async () => {
     const wrapper = mountEditor();
     await flushPromises();
 
-    await wrapper.find('input[aria-label="标题"]').setValue("Autosave title");
+    await wrapper.find('input[aria-label="标题"]').setValue("Manual save title");
     const slugInput = wrapper.find('input[aria-label="URL 标识"]');
-    await slugInput.setValue("autosave-title");
+    await slugInput.setValue("manual-save-title");
     await flushPromises();
 
     await vi.advanceTimersByTimeAsync(1300);
     await flushPromises();
 
-    expect(createPostMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: "Autosave title",
-        status: "DRAFT"
-      })
-    );
-    expect(replaceMock).toHaveBeenCalledWith("/posts/22");
-    expect(window.localStorage.getItem("post-editor:new")).toBeNull();
-  });
-
-  it("keeps a pending publish choice local while autosaving a new draft", async () => {
-    createPostMock.mockResolvedValue({ id: 22 });
-    const wrapper = mountEditor();
-    await flushPromises();
-
-    await wrapper.find('input[aria-label="标题"]').setValue("Autosave title");
-    const slugInput = wrapper.find('input[aria-label="URL 标识"]');
-    await slugInput.setValue("autosave-title");
-    await updatePublishForm(wrapper, { status: "PUBLISHED" });
-    await flushPromises();
-
-    await vi.advanceTimersByTimeAsync(1300);
-    await flushPromises();
-
-    expect(createPostMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: "DRAFT"
-      })
-    );
-    expect((wrapper.findComponent(PostPublishPanel).props("form") as PostForm).status).toBe("PUBLISHED");
-    expect(wrapper.text()).toContain("未保存");
-    expect(window.localStorage.getItem("post-editor:22")).not.toBeNull();
-
-    await vi.advanceTimersByTimeAsync(1300);
-    await flushPromises();
-
+    expect(createPostMock).not.toHaveBeenCalled();
     expect(updatePostMock).not.toHaveBeenCalled();
-  });
-
-  it("keeps in-flight create edits dirty and autosaves follow-up changes to the created draft", async () => {
-    let resolveCreate: (value: { id: number }) => void = () => {};
-    createPostMock.mockReturnValue(
-      new Promise((resolve) => {
-        resolveCreate = resolve;
-      })
-    );
-    const confirmMock = vi.fn(() => false);
-    vi.stubGlobal("confirm", confirmMock);
-    replaceMock.mockImplementation(async (path: string) => {
-      const guard = onBeforeRouteLeaveMock.mock.calls.at(-1)?.[0] as (() => boolean) | undefined;
-      if (guard && !guard()) {
-        throw new Error("blocked by dirty leave guard");
-      }
-      routeMock.params = { id: path.split("/").at(-1) ?? "" };
-    });
-    updatePostMock.mockResolvedValue({ id: 22 });
-    const wrapper = mountEditor();
-    await flushPromises();
-
-    await wrapper.find('input[aria-label="标题"]').setValue("Autosave title");
-    const slugInput = wrapper.find('input[aria-label="URL 标识"]');
-    await slugInput.setValue("autosave-title");
-    await flushPromises();
-
-    await vi.advanceTimersByTimeAsync(1300);
-    await flushPromises();
-
-    expect(createPostMock).toHaveBeenCalledTimes(1);
-    expect(createPostMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: "DRAFT"
-      })
-    );
-
-    await wrapper.find('input[aria-label="标题"]').setValue("Autosave title changed");
-    await flushPromises();
-
-    resolveCreate({ id: 22 });
-    await flushPromises();
-
-    expect(confirmMock).not.toHaveBeenCalled();
-    expect(replaceMock).toHaveBeenCalledWith("/posts/22");
-
+    expect(replaceMock).not.toHaveBeenCalled();
     expect(wrapper.text()).toContain("未保存");
-    expect(window.localStorage.getItem("post-editor:new")).toBeNull();
-    expect(window.localStorage.getItem("post-editor:22")).not.toBeNull();
-
-    await vi.advanceTimersByTimeAsync(1300);
-    await flushPromises();
-
-    expect(createPostMock).toHaveBeenCalledTimes(1);
-    expect(updatePostMock).toHaveBeenCalledWith(
-      22,
-      expect.objectContaining({
-        title: "Autosave title changed",
-        status: "DRAFT"
-      })
-    );
-    expect(window.localStorage.getItem("post-editor:22")).toBeNull();
+    expect(window.localStorage.getItem("post-editor:new")).toContain('"title":"Manual save title"');
   });
 
-  it("keeps edits dirty when they happen while the created draft route is replacing", async () => {
-    let resolveCreate: (value: { id: number }) => void = () => {};
-    let resolveReplace: () => void = () => {};
-    createPostMock.mockReturnValue(
-      new Promise((resolve) => {
-        resolveCreate = resolve;
-      })
-    );
-    replaceMock.mockImplementation(
-      (path: string) =>
-        new Promise<void>((resolve) => {
-          resolveReplace = () => {
-            routeMock.params = { id: path.split("/").at(-1) ?? "" };
-            resolve();
-          };
-        })
-    );
-    updatePostMock.mockResolvedValue({ id: 22 });
-    const wrapper = mountEditor();
-    await flushPromises();
-
-    await wrapper.find('input[aria-label="标题"]').setValue("Autosave title");
-    const slugInput = wrapper.find('input[aria-label="URL 标识"]');
-    await slugInput.setValue("autosave-title");
-    await flushPromises();
-
-    await vi.advanceTimersByTimeAsync(1300);
-    await flushPromises();
-
-    resolveCreate({ id: 22 });
-    await flushPromises();
-    expect(replaceMock).toHaveBeenCalledWith("/posts/22");
-
-    await wrapper.find('input[aria-label="标题"]').setValue("Changed during route replace");
-    await flushPromises();
-
-    resolveReplace();
-    await flushPromises();
-
-    expect(wrapper.text()).toContain("未保存");
-    expect(window.localStorage.getItem("post-editor:new")).toBeNull();
-    expect(window.localStorage.getItem("post-editor:22")).not.toBeNull();
-
-    await vi.advanceTimersByTimeAsync(1300);
-    await flushPromises();
-
-    expect(createPostMock).toHaveBeenCalledTimes(1);
-    expect(updatePostMock).toHaveBeenCalledWith(
-      22,
-      expect.objectContaining({
-        title: "Changed during route replace",
-        status: "DRAFT"
-      })
-    );
-  });
-
-  it("keeps published status when autosaving an existing post", async () => {
+  it("does not autosave existing post edits after they settle", async () => {
     routeMock.params = { id: "5" };
     postsMock.mockResolvedValue([
       {
@@ -504,110 +367,49 @@ describe("PostEditorView", () => {
     await flushPromises();
     updatePostMock.mockClear();
 
-    await updatePublishForm(wrapper, { status: "DRAFT" });
-    await setPublishSlug(wrapper, "published-title-updated");
+    await wrapper.find('input[aria-label="标题"]').setValue("Published title updated");
     await vi.advanceTimersByTimeAsync(1300);
     await flushPromises();
 
-    expect(updatePostMock).toHaveBeenCalledWith(
-      5,
-      expect.objectContaining({
-        status: "PUBLISHED"
-      })
-    );
-    expect((wrapper.findComponent(PostPublishPanel).props("form") as PostForm).status).toBe("DRAFT");
-    expect(createPostMock).not.toHaveBeenCalled();
-
-    await vi.advanceTimersByTimeAsync(1300);
-    await flushPromises();
-
-    expect(updatePostMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("migrates invalid unsaved edits to the created draft recovery key", async () => {
-    let resolveCreate: (value: { id: number }) => void = () => {};
-    let resolveReplace: () => void = () => {};
-    createPostMock.mockReturnValue(
-      new Promise((resolve) => {
-        resolveCreate = resolve;
-      })
-    );
-    replaceMock.mockImplementation(
-      (path: string) =>
-        new Promise<void>((resolve) => {
-          resolveReplace = () => {
-            routeMock.params = { id: path.split("/").at(-1) ?? "" };
-            resolve();
-          };
-        })
-    );
-    const wrapper = mountEditor();
-    await flushPromises();
-
-    await wrapper.find('input[aria-label="标题"]').setValue("Autosave title");
-    const slugInput = wrapper.find('input[aria-label="URL 标识"]');
-    await slugInput.setValue("autosave-title");
-    await flushPromises();
-
-    await vi.advanceTimersByTimeAsync(1300);
-    await flushPromises();
-
-    resolveCreate({ id: 22 });
-    await flushPromises();
-    await slugInput.setValue("");
-    await flushPromises();
-
-    resolveReplace();
-    await flushPromises();
-
-    expect(window.localStorage.getItem("post-editor:new")).toBeNull();
-    expect(window.localStorage.getItem("post-editor:22")).toContain('"slug":""');
-
-    await vi.advanceTimersByTimeAsync(1300);
-    await flushPromises();
-
-    expect(createPostMock).toHaveBeenCalledTimes(1);
     expect(updatePostMock).not.toHaveBeenCalled();
-  });
-
-  it("does not navigate after an in-flight autosave create resolves on an unmounted editor", async () => {
-    let resolveCreate: (value: { id: number }) => void = () => {};
-    createPostMock.mockReturnValue(
-      new Promise((resolve) => {
-        resolveCreate = resolve;
-      })
-    );
-    const wrapper = mountEditor();
-    await flushPromises();
-
-    await wrapper.find('input[aria-label="标题"]').setValue("Autosave title");
-    const slugInput = wrapper.find('input[aria-label="URL 标识"]');
-    await slugInput.setValue("autosave-title");
-    await flushPromises();
-
-    await vi.advanceTimersByTimeAsync(1300);
-    await flushPromises();
-    expect(createPostMock).toHaveBeenCalledTimes(1);
-
-    wrapper.unmount();
-    resolveCreate({ id: 22 });
-    await flushPromises();
-
+    expect(createPostMock).not.toHaveBeenCalled();
     expect(replaceMock).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("未保存");
+    expect(window.localStorage.getItem("post-editor:5")).toContain('"title":"Published title updated"');
   });
 
-  it("does not autosave a new draft before the slug is valid", async () => {
+  it("keeps invalid new draft edits local without autosaving", async () => {
     const wrapper = mountEditor();
     await flushPromises();
 
-    await wrapper.find('input[aria-label="标题"]').setValue("Autosave title");
+    await wrapper.find('input[aria-label="标题"]').setValue("Manual save title");
     await flushPromises();
 
     await vi.advanceTimersByTimeAsync(1300);
     await flushPromises();
 
     expect(createPostMock).not.toHaveBeenCalled();
+    expect(updatePostMock).not.toHaveBeenCalled();
     expect(replaceMock).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem("post-editor:new")).toContain('"title":"Manual save title"');
+  });
+
+  it("asks once when returning from a dirty draft", async () => {
+    const confirmMock = vi.fn(() => true);
+    vi.stubGlobal("confirm", confirmMock);
+    pushMock.mockImplementation(async () => {
+      const leaveGuard = onBeforeRouteLeaveMock.mock.calls[0]?.[0] as (() => boolean) | undefined;
+      leaveGuard?.();
+    });
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    await wrapper.find('input[aria-label="标题"]').setValue("Manual save title");
+    await wrapper.find(".editor-actions .el-button").trigger("click");
+    await flushPromises();
+
+    expect(pushMock).toHaveBeenCalledWith("/posts");
+    expect(confirmMock).toHaveBeenCalledTimes(1);
   });
 
   it("keeps content in place and shows an error when saving fails", async () => {

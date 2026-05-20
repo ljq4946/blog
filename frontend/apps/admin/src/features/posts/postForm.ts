@@ -11,10 +11,6 @@ export interface PublishCheck {
   passed: boolean;
 }
 
-export interface AutosaveOptions {
-  isNew: boolean;
-}
-
 export interface PostRecoverySnapshot {
   form: ReturnType<typeof toPostInput>;
   updatedAt: number;
@@ -60,9 +56,8 @@ export function wordCountFromHtml(html?: string | null) {
     return 0;
   }
 
-  const latinWords = text.match(/[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*/g) ?? [];
-  const cjkCharacters = text.match(/[\u3400-\u9fff]/g) ?? [];
-  return latinWords.length + cjkCharacters.length;
+  const wordCharacters = text.match(/[\p{L}\p{N}]/gu) ?? [];
+  return wordCharacters.length;
 }
 
 export function postFormSnapshot(form: PostForm) {
@@ -90,16 +85,6 @@ export function publishChecklist(form: PostForm): PublishCheck[] {
     { key: "tags", label: "标签", level: "recommended", passed: (form.tagIds ?? []).length > 0 },
     { key: "cover", label: "封面", level: "recommended", passed: form.coverMediaId !== null && form.coverMediaId !== undefined }
   ];
-}
-
-export function canAutosavePost(form: PostForm, _options: AutosaveOptions) {
-  if (!form.title?.trim() || !form.slug?.trim()) {
-    return false;
-  }
-  if (!form.status) {
-    return false;
-  }
-  return true;
 }
 
 export function postRecoveryKey(postId?: number | string | null) {

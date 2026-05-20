@@ -21,6 +21,7 @@ export interface Post {
   summary?: string | null;
   contentHtml?: string | null;
   coverMediaId?: number | null;
+  coverMediaUrl?: string | null;
   status: PostStatus;
   category?: Pick<Category, "id" | "name" | "slug"> | null;
   tags?: Array<Pick<Tag, "id" | "name" | "slug">>;

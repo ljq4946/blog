@@ -82,7 +82,6 @@ import { EditorContent, useEditor } from "@tiptap/vue-3";
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import {
-  canAutosavePost,
   postFormSnapshot,
   postRecoveryKey,
   postRecoverySnapshot,
@@ -98,8 +97,6 @@ import PostPublishPanel from "./PostPublishPanel.vue";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 type EditorMode = "edit" | "preview";
-type SaveMode = "manual" | "autosave";
-let autosaveTimer: number | null = null;
 let isInternalRouteReplace = false;
 let isUnmounted = false;
 
@@ -116,11 +113,8 @@ const errors = ref<string[]>([]);
 const saveError = ref("");
 const publishCheckError = ref("");
 const saveState = ref<SaveState>("idle");
-const saveMode = ref<SaveMode>("manual");
 const activeMode = ref<EditorMode>("edit");
 const lastSavedAt = ref("");
-const lastAutosavedAt = ref("");
-const lastPersistedStatus = ref<Post["status"]>("DRAFT");
 const serverSnapshotUpdatedAt = ref(0);
 const form = reactive<PostForm>({
   title: "",
@@ -148,7 +142,6 @@ const editor = useEditor({
 });
 
 const isDirty = computed(() => postFormSnapshot(form) !== lastSavedSnapshot.value);
-const isAutosaveDirty = computed(() => autosaveFormSnapshot() !== lastSavedSnapshot.value);
 const wordCount = computed(() => wordCountFromHtml(form.contentHtml));
 const selectedCover = computed(() => mediaAssets.value.find((asset) => asset.id === form.coverMediaId) ?? null);
 const publishChecks = computed(() => publishChecklist(form));
@@ -165,9 +158,7 @@ const editorStatusText = computed(() => {
     return `保存失败 · ${wordCount.value} 字 · ${status}`;
   }
   if (saveState.value === "saved") {
-    const savedLabel = saveMode.value === "autosave" ? "已自动保存" : "已保存";
-    const savedAt = saveMode.value === "autosave" ? lastAutosavedAt.value : lastSavedAt.value;
-    return `${savedLabel}${savedAt ? ` ${savedAt}` : ""} · ${wordCount.value} 字 · ${status}`;
+    return `已保存${lastSavedAt.value ? ` ${lastSavedAt.value}` : ""} · ${wordCount.value} 字 · ${status}`;
   }
   return `未保存 · ${wordCount.value} 字 · ${status}`;
 });
@@ -185,9 +176,6 @@ watch(
     }
     if (recoveryWritesReady.value) {
       writeRecoverySnapshot();
-      if (isAutosaveDirty.value) {
-        queueAutosave();
-      }
     }
   }
 );
@@ -280,28 +268,18 @@ function errorMessage(err: unknown) {
   return err instanceof Error ? err.message : "操作失败，请稍后重试";
 }
 
-function autosaveFormSnapshot() {
-  return postFormSnapshot({
-    ...form,
-    tagIds: [...form.tagIds],
-    status: lastPersistedStatus.value
-  });
-}
-
-function refreshSavedSnapshot(snapshot = postFormSnapshot(form), persistedStatus: Post["status"] = form.status ?? "DRAFT") {
+function refreshSavedSnapshot(snapshot = postFormSnapshot(form)) {
   lastSavedSnapshot.value = snapshot;
-  lastPersistedStatus.value = persistedStatus;
   lastSavedAt.value = new Intl.DateTimeFormat("zh-CN", {
     hour: "2-digit",
     minute: "2-digit"
   }).format(new Date());
 }
 
-async function save(status?: Post["status"], mode: SaveMode = "manual") {
+async function save(status?: Post["status"]) {
   saveError.value = "";
   publishCheckError.value = "";
   errors.value = [];
-  saveMode.value = mode;
   if (status === "PUBLISHED" && hasBlockingPublishChecks.value) {
     publishCheckError.value = "请先完成必填发布检查";
     saveState.value = "error";
@@ -310,8 +288,6 @@ async function save(status?: Post["status"], mode: SaveMode = "manual") {
   if (status) {
     form.status = status;
   }
-  const autosavePersistedStatus: Post["status"] =
-    mode === "autosave" ? lastPersistedStatus.value : form.status ?? "DRAFT";
   errors.value = validatePostForm(form);
   if (errors.value.length) {
     return;
@@ -323,7 +299,7 @@ async function save(status?: Post["status"], mode: SaveMode = "manual") {
   const submittedForm: PostForm = {
     ...form,
     tagIds: [...form.tagIds],
-    status: autosavePersistedStatus
+    status: form.status ?? "DRAFT"
   };
   const submittedSnapshot = postFormSnapshot(submittedForm);
   try {
@@ -343,18 +319,7 @@ async function save(status?: Post["status"], mode: SaveMode = "manual") {
     if (recoveryKeyBeforeSave !== recoveryKey.value) {
       window.localStorage.removeItem(recoveryKeyBeforeSave);
     }
-    refreshSavedSnapshot(submittedSnapshot, submittedForm.status);
-    if (mode === "autosave") {
-      lastAutosavedAt.value = lastSavedAt.value;
-    }
-    if (autosaveFormSnapshot() !== submittedSnapshot) {
-      saveState.value = "idle";
-      writeRecoverySnapshot();
-      if (canAutosavePost(form, { isNew: isNew.value })) {
-        queueAutosave();
-      }
-      return;
-    }
+    refreshSavedSnapshot(submittedSnapshot);
     if (postFormSnapshot(form) !== submittedSnapshot) {
       saveState.value = "idle";
       writeRecoverySnapshot();
@@ -364,27 +329,12 @@ async function save(status?: Post["status"], mode: SaveMode = "manual") {
     clearRecoverySnapshot();
   } catch (err) {
     saveState.value = "error";
-    saveError.value = mode === "autosave" ? `自动保存失败：${errorMessage(err)}` : errorMessage(err);
+    saveError.value = errorMessage(err);
   }
-}
-
-function queueAutosave() {
-  if (autosaveTimer) {
-    window.clearTimeout(autosaveTimer);
-  }
-  autosaveTimer = window.setTimeout(() => {
-    autosaveTimer = null;
-    if (saveState.value === "saving" || !isAutosaveDirty.value || !canAutosavePost(form, { isNew: isNew.value })) {
-      return;
-    }
-    void save(undefined, "autosave");
-  }, 1200);
 }
 
 function goBack() {
-  if (confirmLeave()) {
-    router.push("/posts");
-  }
+  router.push("/posts");
 }
 
 async function replaceCreatedDraftRoute(postId: number) {
@@ -471,9 +421,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   isUnmounted = true;
-  if (autosaveTimer) {
-    window.clearTimeout(autosaveTimer);
-  }
   window.removeEventListener("beforeunload", handleBeforeUnload);
   editor.value?.destroy();
 });
@@ -533,6 +480,17 @@ onBeforeUnmount(() => {
 
 .toolbar .el-button {
   margin-left: 0;
+}
+
+.editor-surface {
+  display: grid;
+  padding: 0;
+}
+
+.editor-surface :deep(.ProseMirror) {
+  min-height: 100%;
+  outline: none;
+  padding: 14px;
 }
 
 .mode-actions {

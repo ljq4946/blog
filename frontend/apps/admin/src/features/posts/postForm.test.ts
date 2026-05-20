@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  canAutosavePost,
   postFormSnapshot,
   postRecoveryKey,
   postRecoverySnapshot,
@@ -16,8 +15,9 @@ describe("post form validation", () => {
     expect(validatePostForm({ title: "Hello", slug: "hello", status: "PUBLISHED", tagIds: [] })).toEqual([]);
   });
 
-  it("counts Chinese characters and latin words from editor HTML", () => {
-    expect(wordCountFromHtml("<p>你好 world</p><p>Vue 3</p>")).toBe(5);
+  it("counts Chinese characters, latin letters, and digits from editor HTML", () => {
+    expect(wordCountFromHtml("<p>\u4f60\u597d world</p><p>Vue 3</p>")).toBe(11);
+    expect(wordCountFromHtml("<p>111\u4e0a\u5347abc123\u8d8b\u52bf</p>")).toBe(13);
     expect(wordCountFromHtml("<p><br></p>")).toBe(0);
   });
 
@@ -105,52 +105,6 @@ describe("publishChecklist", () => {
 
   it("normalizes form input before submit", () => {
     expect(toPostInput({ title: "  Ready  ", slug: "ready", status: "DRAFT", tagIds: [] }).title).toBe("Ready");
-  });
-});
-
-describe("canAutosavePost", () => {
-  it("allows existing posts to autosave when required fields are valid", () => {
-    expect(
-      canAutosavePost(
-        {
-          title: "Existing",
-          slug: "existing",
-          contentHtml: "<p>content</p>",
-          status: "PUBLISHED",
-          tagIds: []
-        },
-        { isNew: false }
-      )
-    ).toBe(true);
-  });
-
-  it("blocks new post autosave until title and slug are valid", () => {
-    expect(
-      canAutosavePost(
-        {
-          title: "Draft",
-          slug: "",
-          contentHtml: "<p>content</p>",
-          status: "DRAFT",
-          tagIds: []
-        },
-        { isNew: true }
-      )
-    ).toBe(false);
-  });
-
-  it("blocks autosave when status is missing", () => {
-    expect(
-      canAutosavePost(
-        {
-          title: "Draft",
-          slug: "draft",
-          contentHtml: "<p>content</p>",
-          tagIds: []
-        },
-        { isNew: false }
-      )
-    ).toBe(false);
   });
 });
 
