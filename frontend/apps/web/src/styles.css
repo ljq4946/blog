@@ -580,6 +580,176 @@ a {
   padding: 10px 12px;
 }
 
+.archive-discovery {
+  display: grid;
+  gap: 22px;
+}
+
+.archive-discovery-head p {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 12px 0 0;
+}
+
+.archive-discovery-head strong {
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  color: #11100d;
+  font-family: "IBM Plex Mono", monospace;
+  padding: 8px 10px;
+}
+
+.archive-filters {
+  border: var(--line);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(220px, 2fr) repeat(4, minmax(140px, 1fr)) auto;
+  min-width: 0;
+  padding: 14px;
+}
+
+.archive-filters label {
+  display: grid;
+  gap: 6px;
+  font-weight: 900;
+}
+
+.archive-filters span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.archive-filters input,
+.archive-filters select {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  font: inherit;
+  min-height: 42px;
+  min-width: 0;
+  padding: 8px;
+  width: 100%;
+}
+
+.archive-filter-actions {
+  align-self: end;
+  display: flex;
+  gap: 8px;
+}
+
+.archive-filter-actions button,
+.pagination-controls button,
+.archive-empty button {
+  background: var(--red);
+  border: 2px solid var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+  min-height: 42px;
+  padding: 8px 12px;
+}
+
+.archive-filter-actions button {
+  max-width: 100%;
+}
+
+.archive-filter-actions button[type="button"],
+.pagination-controls button:disabled,
+.archive-empty button {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.pagination-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.archive-error {
+  border: 2px solid var(--red);
+  color: var(--red);
+  font-weight: 900;
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.archive-discovery-list {
+  border-top: var(--line);
+  display: grid;
+}
+
+.archive-discovery-item {
+  border-bottom: var(--line);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 160px minmax(0, 1fr);
+  padding: 18px 0;
+}
+
+.archive-discovery-cover-link {
+  aspect-ratio: 4 / 3;
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  display: block;
+  overflow: hidden;
+}
+
+.archive-discovery-cover {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.archive-discovery-cover--empty {
+  background:
+    linear-gradient(135deg, transparent 0 46%, var(--ink) 47% 53%, transparent 54%),
+    var(--paper);
+}
+
+.archive-discovery-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.archive-discovery-title {
+  font-family: "Archivo Black", "Arial Black", sans-serif;
+  font-size: clamp(28px, 5vw, 48px);
+  line-height: 0.95;
+  overflow-wrap: anywhere;
+}
+
+.archive-discovery-copy p {
+  font-size: 18px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.archive-empty {
+  display: grid;
+  gap: 12px;
+}
+
+.archive-empty p {
+  margin: 0;
+}
+
+.pagination-controls {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.pagination-controls span {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 900;
+}
+
 .archive-month {
   border-top: var(--line);
   padding: 20px 0;
@@ -683,6 +853,24 @@ a {
 
   .archive-month {
     grid-template-columns: 1fr;
+  }
+
+  .archive-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .archive-filter-actions,
+  .pagination-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .archive-discovery-item {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .archive-discovery-title {
+    font-size: 26px;
   }
 
   .archive-post-item {
