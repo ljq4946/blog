@@ -46,6 +46,18 @@ public class PostController {
     return postService.publicList(category, tag);
   }
 
+  @GetMapping("/api/v1/posts/search")
+  public PageResponse<PostResponse> publicSearch(
+      @RequestParam Optional<String> keyword,
+      @RequestParam Optional<Integer> year,
+      @RequestParam Optional<String> category,
+      @RequestParam Optional<String> tag,
+      @RequestParam Optional<Integer> page,
+      @RequestParam Optional<Integer> size,
+      @RequestParam Optional<String> sort) {
+    return postService.search(new PostSearchRequest(keyword, year, category, tag, page, size, sort));
+  }
+
   @GetMapping("/api/v1/posts/{slug}")
   public PostResponse publicDetail(@PathVariable String slug) {
     return postService.publicDetail(slug);

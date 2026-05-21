@@ -2,11 +2,14 @@ package com.example.blog.post;
 
 import com.example.blog.category.Category;
 import com.example.blog.tag.Tag;
+import org.springframework.data.domain.Page;
 
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.Optional;
+import java.util.function.Function;
 
 public final class PostDtos {
 
@@ -77,5 +80,31 @@ public final class PostDtos {
   }
 
   public record ArchiveMonth(String month, List<PostResponse> posts) {
+  }
+
+  public record PageResponse<T>(
+      List<T> content,
+      int number,
+      int size,
+      long totalElements,
+      int totalPages) {
+    public static <S, T> PageResponse<T> from(Page<S> page, Function<S, T> mapper) {
+      return new PageResponse<>(
+          page.getContent().stream().map(mapper).toList(),
+          page.getNumber(),
+          page.getSize(),
+          page.getTotalElements(),
+          page.getTotalPages());
+    }
+  }
+
+  public record PostSearchRequest(
+      Optional<String> keyword,
+      Optional<Integer> year,
+      Optional<String> category,
+      Optional<String> tag,
+      Optional<Integer> page,
+      Optional<Integer> size,
+      Optional<String> sort) {
   }
 }
