@@ -49,6 +49,7 @@ type ArchiveFilterState = {
   tag: string;
   sort: string;
 };
+type ArchiveFilterInput = Required<Pick<PostSearchParams, "keyword" | "year" | "category" | "tag" | "sort">>;
 
 const route = useRoute();
 const router = useRouter();
@@ -94,13 +95,13 @@ function queryPage(value: unknown) {
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
 }
 
-function normalizeFilterState(filters: ArchiveFilterState) {
+function normalizeFilterState(filters: ArchiveFilterInput): ArchiveFilterState {
   return {
-    keyword: filters.keyword.trim(),
-    year: filters.year.trim(),
-    category: filters.category.trim(),
-    tag: filters.tag.trim(),
-    sort: filters.sort.trim() || DEFAULT_SORT
+    keyword: queryString(filters.keyword).trim(),
+    year: queryString(filters.year).trim(),
+    category: queryString(filters.category).trim(),
+    tag: queryString(filters.tag).trim(),
+    sort: queryString(filters.sort).trim() || DEFAULT_SORT
   };
 }
 
@@ -168,7 +169,7 @@ async function loadTaxonomy() {
   }
 }
 
-async function searchFromFilters(nextFilters: ArchiveFilterState) {
+async function searchFromFilters(nextFilters: ArchiveFilterInput) {
   Object.assign(filterState, normalizeFilterState(nextFilters));
   const params = activeParams(0);
   await router.replace({ query: cleanQuery(params) });
