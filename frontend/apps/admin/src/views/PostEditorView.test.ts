@@ -17,6 +17,16 @@ const categoriesMock = vi.hoisted(() => vi.fn());
 const tagsMock = vi.hoisted(() => vi.fn());
 const mediaMock = vi.hoisted(() => vi.fn());
 const now = Date.parse("2026-05-19T12:00:00Z");
+const editorState = vi.hoisted(() => ({
+  selection: {
+    empty: true,
+    from: 0,
+    to: 0
+  },
+  doc: {
+    textBetween: vi.fn(() => "")
+  }
+}));
 const editorChain = vi.hoisted(() => {
   const chain = {
     focus: vi.fn(),
@@ -28,6 +38,8 @@ const editorChain = vi.hoisted(() => {
     toggleCodeBlock: vi.fn(),
     undo: vi.fn(),
     redo: vi.fn(),
+    extendMarkRange: vi.fn(),
+    insertContent: vi.fn(),
     setLink: vi.fn(),
     setImage: vi.fn(),
     unsetLink: vi.fn(),
@@ -70,6 +82,8 @@ vi.mock("@tiptap/vue-3", async () => {
     commands: editorChain,
     getHTML: () => "<p>你好 world</p>",
     getText: () => "你好 world",
+    getAttributes: () => ({}),
+    state: editorState,
     isActive: () => false,
     destroy: vi.fn()
   };
@@ -119,6 +133,10 @@ describe("PostEditorView", () => {
     onBeforeRouteLeaveMock.mockReset();
     createPostMock.mockReset();
     updatePostMock.mockReset();
+    editorState.selection.empty = true;
+    editorState.selection.from = 0;
+    editorState.selection.to = 0;
+    editorState.doc.textBetween.mockReturnValue("");
     postsMock.mockResolvedValue([]);
     categoriesMock.mockResolvedValue([{ id: 1, name: "Category", slug: "category", sortOrder: 0 }]);
     tagsMock.mockResolvedValue([{ id: 2, name: "Tag", slug: "tag" }]);
@@ -287,8 +305,8 @@ describe("PostEditorView", () => {
         contentHtml: "<p>Preview body</p>",
         coverMediaId: 7,
         status: "DRAFT",
-        category: null,
-        tags: [],
+        category: { id: 1, name: "Category", slug: "category" },
+        tags: [{ id: 2, name: "Tag", slug: "tag" }],
         publishedAt: null
       }
     ]);
@@ -299,11 +317,16 @@ describe("PostEditorView", () => {
     await flushPromises();
 
     expect(wrapper.find(".editor-preview").exists()).toBe(true);
-    expect(wrapper.text()).toContain("文章预览");
+    expect(wrapper.find(".editor-preview.article-page").exists()).toBe(true);
+    expect(wrapper.find(".article-hero").exists()).toBe(true);
+    expect(wrapper.find(".prose.article-renderer").exists()).toBe(true);
+    expect(wrapper.find(".article-toc").exists()).toBe(true);
     expect(wrapper.text()).toContain("Preview title");
     expect(wrapper.text()).toContain("Preview summary");
+    expect(wrapper.text()).toContain("Category");
+    expect(wrapper.text()).toContain("#Tag");
     expect(wrapper.text()).toContain("Preview body");
-    expect(wrapper.find(".editor-preview img").attributes("src")).toBe("/uploads/cover.png");
+    expect(wrapper.find(".article-hero-cover").attributes("src")).toBe("/uploads/cover.png");
     expect(wrapper.find(".toolbar").exists()).toBe(false);
 
     await wrapper.find('[data-test="edit-mode"]').trigger("click");
@@ -311,6 +334,48 @@ describe("PostEditorView", () => {
 
     expect(wrapper.find(".editor-preview").exists()).toBe(false);
     expect(wrapper.find(".toolbar").exists()).toBe(true);
+  });
+
+  it("inserts a visible link when no text is selected", async () => {
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    await wrapper.find('button[aria-label="插入链接"]').trigger("click");
+    await flushPromises();
+    await wrapper.find('[data-test="link-text"]').setValue("Example");
+    await wrapper.find('[data-test="link-href"]').setValue("https://example.com");
+    await wrapper.find('[data-test="confirm-link"]').trigger("click");
+
+    expect(editorChain.insertContent).toHaveBeenCalledWith('<a href="https://example.com">Example</a>');
+  });
+
+  it("applies a link to selected text without replacing the selection", async () => {
+    editorState.selection.empty = false;
+    editorState.selection.from = 1;
+    editorState.selection.to = 8;
+    editorState.doc.textBetween.mockReturnValue("Selected");
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    await wrapper.find('button[aria-label="插入链接"]').trigger("click");
+    await flushPromises();
+    await wrapper.find('[data-test="link-href"]').setValue("https://example.com");
+    await wrapper.find('[data-test="confirm-link"]').trigger("click");
+
+    expect(editorChain.extendMarkRange).toHaveBeenCalledWith("link");
+    expect(editorChain.setLink).toHaveBeenCalledWith({ href: "https://example.com" });
+  });
+
+  it("inserts an inline image from the media library", async () => {
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    await wrapper.find('button[aria-label="插入图片"]').trigger("click");
+    await flushPromises();
+    await wrapper.find('[data-test="image-asset-7"]').trigger("click");
+    await wrapper.find('[data-test="confirm-image"]').trigger("click");
+
+    expect(editorChain.setImage).toHaveBeenCalledWith({ src: "/uploads/cover.png", alt: "cover.png" });
   });
 
   it("stays on the editor and shows save feedback after creating a draft", async () => {
