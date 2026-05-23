@@ -106,9 +106,9 @@ function updateField<K extends keyof PostForm>(key: K, value: PostForm[K]) {
 }
 
 .publish-card {
-  background: #fffaf0;
+  background: var(--paper-soft);
   border: 2px solid var(--ink);
-  box-shadow: 6px 6px 0 rgba(17, 16, 13, 0.14);
+  box-shadow: 6px 6px 0 rgba(17, 16, 13, 0.2);
   padding: 14px;
 }
 
@@ -175,7 +175,7 @@ function updateField<K extends keyof PostForm>(key: K, value: PostForm[K]) {
   align-items: center;
   background:
     repeating-linear-gradient(135deg, rgba(29, 88, 168, 0.12), rgba(29, 88, 168, 0.12) 8px, transparent 8px, transparent 16px),
-    #fffaf0;
+    var(--paper-soft);
   border: 2px dashed var(--blue);
   color: var(--blue);
   display: grid;

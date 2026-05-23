@@ -1,6 +1,6 @@
 <template>
-  <nav v-if="items.length" class="article-toc" aria-label="Article table of contents">
-    <h2>On this page</h2>
+  <nav v-if="items.length" class="article-toc" aria-label="文章目录">
+    <h2>目录</h2>
     <ol>
       <li v-for="item in items" :key="item.id">
         <a

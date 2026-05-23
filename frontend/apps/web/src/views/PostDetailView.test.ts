@@ -5,6 +5,10 @@ import PostDetailView from "./PostDetailView.vue";
 
 const routeMock = vi.hoisted(() => ({ params: { slug: "reader-upgrade" } }));
 const postMock = vi.hoisted(() => vi.fn());
+const commentsMock = vi.hoisted(() => vi.fn());
+const createCommentMock = vi.hoisted(() => vi.fn());
+const likesMock = vi.hoisted(() => vi.fn());
+const likePostMock = vi.hoisted(() => vi.fn());
 
 vi.mock("vue-router", async () => {
   const actual = await vi.importActual<typeof import("vue-router")>("vue-router");
@@ -17,7 +21,11 @@ vi.mock("vue-router", async () => {
 
 vi.mock("../lib/api", () => ({
   publicApi: {
-    post: postMock
+    post: postMock,
+    comments: commentsMock,
+    createComment: createCommentMock,
+    likes: likesMock,
+    likePost: likePostMock
   }
 }));
 
@@ -38,6 +46,19 @@ describe("PostDetailView", () => {
   beforeEach(() => {
     routeMock.params = { slug: "reader-upgrade" };
     postMock.mockReset();
+    commentsMock.mockReset();
+    createCommentMock.mockReset();
+    likesMock.mockReset();
+    likePostMock.mockReset();
+    commentsMock.mockResolvedValue([]);
+    createCommentMock.mockResolvedValue({
+      id: 11,
+      nickname: "Lin",
+      content: "New comment",
+      createdAt: "2026-05-21T00:00:00Z"
+    });
+    likesMock.mockResolvedValue({ count: 0 });
+    likePostMock.mockResolvedValue({ count: 1 });
     document.documentElement.removeAttribute("data-theme");
     localStorage.clear();
   });
@@ -61,10 +82,94 @@ describe("PostDetailView", () => {
     expect(wrapper.text()).toContain("#Vue");
     expect(wrapper.get(".article-hero-cover").attributes("src")).toBe("/uploads/cover.png");
     expect(wrapper.text()).toContain("Setup Guide");
-    expect(wrapper.text()).toContain("On this page");
+    expect(wrapper.text()).toContain("目录");
     expect(wrapper.find(".reading-progress").exists()).toBe(true);
     expect(wrapper.find(".reading-preferences").exists()).toBe(true);
     expect(wrapper.find('[data-test="back-to-top"]').exists()).toBe(true);
+    expect(wrapper.get('[data-test="back-to-top"]').text()).toBe("返回顶部");
+  });
+
+  it("renders comments and submits a plain-text comment", async () => {
+    postMock.mockResolvedValue(post);
+    likesMock.mockResolvedValue({ count: 3 });
+    commentsMock.mockResolvedValue([
+      {
+        id: 10,
+        nickname: "Ada",
+        content: "<b>Not rendered as HTML</b>",
+        createdAt: "2026-05-20T12:00:00Z"
+      }
+    ]);
+
+    const wrapper = mount(PostDetailView, {
+      global: {
+        stubs: {
+          RouterLink: { props: ["to"], template: "<a :href='to'><slot /></a>" }
+        }
+      }
+    });
+    await flushPromises();
+
+    expect(commentsMock).toHaveBeenCalledWith("reader-upgrade");
+    expect(likesMock).toHaveBeenCalledWith("reader-upgrade");
+    expect(wrapper.text()).toContain("Ada");
+    expect(wrapper.text()).toContain("<b>Not rendered as HTML</b>");
+    expect(wrapper.html()).not.toContain("<b>Not rendered as HTML</b>");
+    expect(wrapper.get('[data-test="like-count"]').text()).toContain("3");
+
+    await wrapper.get('[data-test="comment-nickname"]').setValue("Lin");
+    await wrapper.get('[data-test="comment-email"]').setValue("lin@example.com");
+    await wrapper.get('[data-test="comment-content"]').setValue("New comment");
+    await wrapper.get('[data-test="comment-form"]').trigger("submit.prevent");
+    await flushPromises();
+
+    expect(createCommentMock).toHaveBeenCalledWith("reader-upgrade", {
+      nickname: "Lin",
+      email: "lin@example.com",
+      content: "New comment"
+    });
+    expect(wrapper.text()).toContain("New comment");
+  });
+
+  it("likes once per browser and persists liked state locally", async () => {
+    postMock.mockResolvedValue(post);
+    likesMock.mockResolvedValue({ count: 0 });
+    likePostMock.mockResolvedValue({ count: 1 });
+
+    const wrapper = mount(PostDetailView, {
+      global: {
+        stubs: {
+          RouterLink: { props: ["to"], template: "<a :href='to'><slot /></a>" }
+        }
+      }
+    });
+    await flushPromises();
+
+    await wrapper.get('[data-test="like-button"]').trigger("click");
+    await flushPromises();
+
+    expect(likePostMock).toHaveBeenCalledWith("reader-upgrade");
+    expect(wrapper.get('[data-test="like-count"]').text()).toContain("1");
+    expect(wrapper.get('[data-test="like-button"]').attributes("disabled")).toBeDefined();
+    expect(localStorage.getItem("blog-liked-posts")).toContain("reader-upgrade");
+  });
+
+  it("keeps the article visible when interactions fail to load", async () => {
+    postMock.mockResolvedValue(post);
+    commentsMock.mockRejectedValue(new Error("comments down"));
+
+    const wrapper = mount(PostDetailView, {
+      global: {
+        stubs: {
+          RouterLink: { props: ["to"], template: "<a :href='to'><slot /></a>" }
+        }
+      }
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Reader Upgrade");
+    expect(wrapper.text()).toContain("互动数据暂时无法加载。");
+    expect(wrapper.text()).not.toContain("文章暂不可用");
   });
 
   it("shows a clear error state when the article cannot load", async () => {
@@ -79,7 +184,7 @@ describe("PostDetailView", () => {
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Article unavailable");
-    expect(wrapper.text()).toContain("Return to archive");
+    expect(wrapper.text()).toContain("文章暂不可用");
+    expect(wrapper.text()).toContain("返回全部文章");
   });
 });

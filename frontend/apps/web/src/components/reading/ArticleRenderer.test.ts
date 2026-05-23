@@ -32,13 +32,13 @@ describe("ArticleRenderer", () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain("ts");
-    expect(wrapper.get('[data-test="copy-code"]').attributes("aria-label")).toBe("Copy code block");
+    expect(wrapper.get('[data-test="copy-code"]').attributes("aria-label")).toBe("复制代码块");
 
     await wrapper.get('[data-test="copy-code"]').trigger("click");
     await flushPromises();
 
     expect(writeText).toHaveBeenCalledWith("const answer: number = 42;");
-    expect(wrapper.text()).toContain("Copied");
+    expect(wrapper.text()).toContain("已复制");
   });
 
   it("keeps code visible when no language class is present", async () => {

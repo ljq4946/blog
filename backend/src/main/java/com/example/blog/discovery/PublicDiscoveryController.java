@@ -1,0 +1,108 @@
+package com.example.blog.discovery;
+
+import com.example.blog.config.SiteProperties;
+import com.example.blog.post.Post;
+import com.example.blog.post.PostRepository;
+import com.example.blog.post.PostStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+public class PublicDiscoveryController {
+
+  private static final DateTimeFormatter RFC_1123 = DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneOffset.UTC);
+
+  private final PostRepository posts;
+  private final SiteProperties site;
+
+  public PublicDiscoveryController(PostRepository posts, SiteProperties site) {
+    this.posts = posts;
+    this.site = site;
+  }
+
+  @GetMapping(value = "/sitemap.xml", produces = MediaType.APPLICATION_XML_VALUE)
+  public String sitemap() {
+    String baseUrl = site.normalizedBaseUrl();
+    StringBuilder xml = new StringBuilder("""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        """);
+    List.of("/", "/archive", "/about").forEach(path -> appendSitemapUrl(xml, baseUrl + path));
+    posts.findByStatusOrderByPublishedAtDescCreatedAtDesc(PostStatus.PUBLISHED)
+        .forEach(post -> appendSitemapUrl(xml, baseUrl + "/posts/" + post.getSlug()));
+    xml.append("</urlset>\n");
+    return xml.toString();
+  }
+
+  @GetMapping(value = "/feed.xml", produces = "application/rss+xml")
+  public String feed() {
+    String baseUrl = site.normalizedBaseUrl();
+    StringBuilder xml = new StringBuilder("""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0">
+        <channel>
+        """);
+    appendElement(xml, "title", site.getName());
+    appendElement(xml, "link", baseUrl + "/");
+    appendElement(xml, "description", site.getDescription());
+    posts.findTop20ByStatusOrderByPublishedAtDescCreatedAtDesc(PostStatus.PUBLISHED)
+        .forEach(post -> appendFeedItem(xml, baseUrl, post));
+    xml.append("</channel>\n</rss>\n");
+    return xml.toString();
+  }
+
+  @GetMapping(value = "/robots.txt", produces = MediaType.TEXT_PLAIN_VALUE)
+  public String robots() {
+    return """
+        User-agent: *
+        Allow: /
+        Sitemap: %s/sitemap.xml
+        """.formatted(site.normalizedBaseUrl());
+  }
+
+  @GetMapping("/health")
+  public Map<String, String> health() {
+    return Map.of("status", "UP");
+  }
+
+  private void appendSitemapUrl(StringBuilder xml, String url) {
+    xml.append("<url><loc>").append(escapeXml(url)).append("</loc></url>\n");
+  }
+
+  private void appendFeedItem(StringBuilder xml, String baseUrl, Post post) {
+    xml.append("<item>\n");
+    appendElement(xml, "title", post.getTitle());
+    appendElement(xml, "link", baseUrl + "/posts/" + post.getSlug());
+    appendElement(xml, "guid", baseUrl + "/posts/" + post.getSlug());
+    appendElement(xml, "description", plainText(post.getContentHtml()));
+    if (post.getPublishedAt() != null) {
+      appendElement(xml, "pubDate", RFC_1123.format(post.getPublishedAt()));
+    }
+    xml.append("</item>\n");
+  }
+
+  private void appendElement(StringBuilder xml, String name, String value) {
+    xml.append("<").append(name).append(">")
+        .append(escapeXml(value == null ? "" : value))
+        .append("</").append(name).append(">\n");
+  }
+
+  private String plainText(String html) {
+    return html == null ? "" : html.replaceAll("<[^>]*>", "").trim();
+  }
+
+  private String escapeXml(String value) {
+    return value
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&apos;");
+  }
+}

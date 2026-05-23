@@ -9,6 +9,9 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 ENV UPLOAD_DIR=/app/uploads
 COPY --from=build /workspace/target/blog-0.1.0-SNAPSHOT.jar /app/blog.jar
-RUN mkdir -p /app/uploads
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/* \
+  && mkdir -p /app/uploads
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/blog.jar"]

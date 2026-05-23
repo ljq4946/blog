@@ -2,6 +2,7 @@ import { tokenStorage } from "@blog/shared";
 import { createRouter, createWebHistory } from "vue-router";
 import AboutView from "../views/AboutView.vue";
 import CategoriesView from "../views/CategoriesView.vue";
+import CommentsView from "../views/CommentsView.vue";
 import DashboardView from "../views/DashboardView.vue";
 import LoginView from "../views/LoginView.vue";
 import MediaView from "../views/MediaView.vue";
@@ -21,6 +22,7 @@ export const router = createRouter({
     { path: "/categories", component: CategoriesView },
     { path: "/tags", component: TagsView },
     { path: "/media", component: MediaView },
+    { path: "/comments", component: CommentsView },
     { path: "/about", component: AboutView }
   ]
 });

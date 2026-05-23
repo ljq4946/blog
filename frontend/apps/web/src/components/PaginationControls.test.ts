@@ -8,10 +8,15 @@ describe("PaginationControls", () => {
       props: { page: 1, totalPages: 3 }
     });
 
-    expect(wrapper.text()).toContain("Page 2 of 3");
+    expect(wrapper.text()).toContain("第 2 / 3 页");
 
-    await wrapper.get('[data-test="previous-page"]').trigger("click");
-    await wrapper.get('[data-test="next-page"]').trigger("click");
+    const previous = wrapper.get('[data-test="previous-page"]');
+    const next = wrapper.get('[data-test="next-page"]');
+    expect(previous.text()).toBe("上一页");
+    expect(next.text()).toBe("下一页");
+
+    await previous.trigger("click");
+    await next.trigger("click");
 
     expect(wrapper.emitted("change")).toEqual([[0], [2]]);
   });

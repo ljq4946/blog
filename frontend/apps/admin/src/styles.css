@@ -1,33 +1,4 @@
-:root {
-  --paper: #f4f0e8;
-  --ink: #11100d;
-  --red: #d7392f;
-  --blue: #1d58a8;
-  --yellow: #f3c640;
-  --line: 3px solid var(--ink);
-  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
-  color: var(--ink);
-  background: var(--paper);
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  background:
-    linear-gradient(90deg, rgba(17, 16, 13, 0.06) 1px, transparent 1px),
-    linear-gradient(rgba(17, 16, 13, 0.05) 1px, transparent 1px),
-    var(--paper);
-  background-size: 48px 48px;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
+@import "../../constructivist.css";
 
 button,
 .el-button {
@@ -35,69 +6,99 @@ button,
 }
 
 .admin-shell {
-  min-height: 100vh;
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.admin-shell--constructivist {
+  background:
+    linear-gradient(135deg, transparent 0 62%, rgba(216, 36, 31, 0.08) 62% 67%, transparent 67%),
+    transparent;
 }
 
 .sidebar {
-  border-right: var(--line);
   background: var(--ink);
-  color: var(--paper);
-  padding: 24px;
+  border-right: var(--line);
+  color: var(--white);
   display: flex;
   flex-direction: column;
   gap: 28px;
+  padding: 24px;
+  position: relative;
+}
+
+.sidebar::after {
+  background: var(--red);
+  bottom: 92px;
+  content: "";
+  height: 38px;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  transform: skewY(-11deg);
+  width: 82px;
+  z-index: 0;
 }
 
 .brand {
+  align-items: center;
+  display: flex;
   font-family: "Archivo Black", "Arial Black", sans-serif;
   font-size: 22px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
   gap: 12px;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
 }
 
 .brand-mark {
-  width: 34px;
-  height: 34px;
   background: linear-gradient(135deg, var(--red) 0 50%, var(--yellow) 50%);
-  border: 2px solid var(--paper);
+  border: 2px solid var(--white);
+  height: 34px;
+  transform: skewX(-12deg);
+  width: 34px;
 }
 
 .sidebar nav {
   display: grid;
   gap: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .sidebar nav a,
 .logout {
-  border: 2px solid var(--paper);
-  color: var(--paper);
   background: transparent;
+  border: 2px solid var(--white);
+  color: var(--white);
+  font: inherit;
+  font-weight: 900;
   padding: 10px 12px;
   text-align: left;
-  font: inherit;
 }
 
-.sidebar nav a.router-link-active {
+.sidebar nav a.router-link-active,
+.sidebar nav a:hover {
   background: var(--red);
 }
 
 .logout {
   margin-top: auto;
   cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
 .workspace {
-  padding: 28px;
   min-width: 0;
+  padding: 28px;
 }
 
 .panel {
   border: var(--line);
-  background: rgba(244, 240, 232, 0.92);
+  background: rgba(255, 248, 234, 0.92);
+  box-shadow: var(--shadow-step);
   padding: 20px;
 }
 
@@ -123,9 +124,18 @@ button,
 }
 
 .metric {
+  background: var(--paper-soft);
   border: var(--line);
   padding: 18px;
-  background: var(--paper);
+  position: relative;
+}
+
+.metric::before {
+  background: var(--red);
+  content: "";
+  display: block;
+  height: 10px;
+  margin: -18px -18px 14px;
 }
 
 .metric b {
@@ -148,11 +158,11 @@ button,
 }
 
 .login-card {
-  width: min(420px, 100%);
+  background: var(--paper-soft);
   border: var(--line);
-  background: var(--paper);
-  padding: 28px;
   box-shadow: 12px 12px 0 var(--red);
+  padding: 28px;
+  width: min(420px, 100%);
 }
 
 .login-field {
@@ -164,10 +174,10 @@ button,
 }
 
 .editor-surface {
+  background: var(--paper-soft);
   border: 2px solid var(--ink);
   min-height: 260px;
   padding: 14px;
-  background: #fffaf0;
 }
 
 .media-grid {
@@ -177,9 +187,51 @@ button,
 }
 
 .media-tile {
+  background: var(--paper-soft);
   border: 2px solid var(--ink);
   padding: 12px;
-  background: #fffaf0;
+}
+
+.el-button {
+  border: 2px solid var(--ink) !important;
+  font-weight: 900 !important;
+}
+
+.el-button--danger,
+.el-button--primary {
+  --el-button-bg-color: var(--red) !important;
+  --el-button-border-color: var(--ink) !important;
+  --el-button-hover-bg-color: var(--red-deep) !important;
+  --el-button-hover-border-color: var(--ink) !important;
+  --el-button-text-color: var(--white) !important;
+}
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper,
+.el-table,
+.el-dialog {
+  border-radius: 0 !important;
+}
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  background: var(--paper-soft) !important;
+  border: 2px solid var(--ink) !important;
+  box-shadow: none !important;
+}
+
+.el-table {
+  --el-table-border-color: var(--ink);
+  --el-table-header-bg-color: var(--yellow);
+  --el-table-row-hover-bg-color: rgba(216, 36, 31, 0.08);
+  border: 2px solid var(--ink) !important;
+}
+
+.el-dialog {
+  background: var(--paper-soft) !important;
+  border: var(--line);
 }
 
 @media (max-width: 760px) {

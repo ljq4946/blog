@@ -28,7 +28,9 @@ describe("ArchiveFilters", () => {
   it("renders filter controls and emits search with edited values", async () => {
     const wrapper = mountFilters();
 
-    expect(wrapper.get("label[for='archive-keyword']").text()).toContain("Keyword");
+    expect(wrapper.get("label[for='archive-keyword']").text()).toContain("关键词");
+    expect(wrapper.get(".archive-filter-actions").text()).toContain("搜索");
+    expect(wrapper.get(".archive-filter-actions").text()).toContain("重置");
     await wrapper.get("#archive-keyword").setValue("spring");
     await wrapper.get("form").trigger("submit");
 

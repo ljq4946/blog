@@ -2,8 +2,8 @@
   <main class="content-band archive-discovery">
     <div class="section-head archive-discovery-head">
       <div>
-        <h1>All Articles</h1>
-        <p>Browse posts by time, topic, and keyword.</p>
+        <h1>全部文章</h1>
+        <p>按时间、主题或关键词浏览文章。</p>
       </div>
       <strong>{{ resultLabel }}</strong>
     </div>
@@ -83,7 +83,7 @@ const years = computed(() => {
 
 const resultLabel = computed(() => {
   const total = pageData.value.totalElements;
-  return `${total} ${total === 1 ? "result" : "results"}`;
+  return `${total} 篇文章`;
 });
 
 function queryString(value: unknown) {
@@ -151,7 +151,7 @@ async function loadPosts(params: PostSearchParams) {
   try {
     pageData.value = await publicApi.searchPosts(params);
   } catch {
-    loadError.value = "Articles could not be loaded. Try again later.";
+    loadError.value = "文章列表暂时无法加载，请稍后再试。";
     pageData.value = { content: [], number: 0, size: PAGE_SIZE, totalElements: 0, totalPages: 0 };
   }
 }

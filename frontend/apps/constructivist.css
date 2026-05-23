@@ -1,0 +1,79 @@
+:root {
+  --paper: #f3ead7;
+  --paper-soft: #fff8ea;
+  --paper-quiet: #e6dcc8;
+  --ink: #11100d;
+  --ink-muted: #4d473b;
+  --red: #d8241f;
+  --red-deep: #971f1b;
+  --blue: #164f8e;
+  --yellow: #f2c43a;
+  --white: #fffdf6;
+  --line: 3px solid var(--ink);
+  --line-thin: 2px solid var(--ink);
+  --shadow-step: 10px 10px 0 var(--ink);
+  --shadow-red: 10px 10px 0 var(--red);
+  --grid-size: 48px;
+  font-family: "IBM Plex Sans", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    linear-gradient(90deg, rgba(17, 16, 13, 0.06) 1px, transparent 1px),
+    linear-gradient(rgba(17, 16, 13, 0.05) 1px, transparent 1px),
+    radial-gradient(circle at 12% 18%, rgba(216, 36, 31, 0.08), transparent 24%),
+    var(--paper);
+  background-size: var(--grid-size) var(--grid-size), var(--grid-size) var(--grid-size), auto, auto;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.construct-panel {
+  background: rgba(255, 248, 234, 0.88);
+  border: var(--line);
+  box-shadow: var(--shadow-step);
+}
+
+.construct-label {
+  background: var(--yellow);
+  border: var(--line-thin);
+  color: var(--ink);
+  display: inline-flex;
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.1;
+  padding: 6px 8px;
+  text-transform: uppercase;
+}
+
+.construct-action {
+  align-items: center;
+  background: var(--red);
+  border: var(--line-thin);
+  color: var(--white);
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 900;
+  justify-content: center;
+  min-height: 42px;
+  padding: 8px 12px;
+}

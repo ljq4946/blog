@@ -1,47 +1,47 @@
 <template>
   <form class="archive-filters" @submit.prevent="submitSearch">
     <label for="archive-keyword">
-      <span>Keyword</span>
-      <input id="archive-keyword" v-model="draft.keyword" type="search" aria-label="Search title, summary, content" />
+      <span>关键词</span>
+      <input id="archive-keyword" v-model="draft.keyword" type="search" aria-label="搜索标题、摘要和正文" />
     </label>
 
     <label for="archive-year">
-      <span>Year</span>
+      <span>年份</span>
       <select id="archive-year" v-model="draft.year">
-        <option value="">All years</option>
+        <option value="">全部年份</option>
         <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
       </select>
     </label>
 
     <label v-if="taxonomyAvailable" for="archive-category">
-      <span>Category</span>
+      <span>分类</span>
       <select id="archive-category" v-model="draft.category">
-        <option value="">All categories</option>
+        <option value="">全部分类</option>
         <option v-for="category in categories" :key="category.id" :value="category.slug">{{ category.name }}</option>
       </select>
     </label>
 
     <label v-if="taxonomyAvailable" for="archive-tag">
-      <span>Tag</span>
+      <span>标签</span>
       <select id="archive-tag" v-model="draft.tag">
-        <option value="">All tags</option>
+        <option value="">全部标签</option>
         <option v-for="tag in tags" :key="tag.id" :value="tag.slug">#{{ tag.name }}</option>
       </select>
     </label>
 
     <label for="archive-sort">
-      <span>Sort</span>
+      <span>排序</span>
       <select id="archive-sort" v-model="draft.sort">
-        <option value="publishedAt,desc">Newest</option>
-        <option value="publishedAt,asc">Oldest</option>
-        <option value="title,asc">Title A-Z</option>
-        <option value="title,desc">Title Z-A</option>
+        <option value="publishedAt,desc">最新发布</option>
+        <option value="publishedAt,asc">最早发布</option>
+        <option value="title,asc">标题 A-Z</option>
+        <option value="title,desc">标题 Z-A</option>
       </select>
     </label>
 
     <div class="archive-filter-actions">
-      <button type="submit">Search</button>
-      <button data-test="archive-reset" type="button" @click="$emit('reset')">Reset</button>
+      <button type="submit">搜索</button>
+      <button data-test="archive-reset" type="button" @click="$emit('reset')">重置</button>
     </div>
   </form>
 </template>
