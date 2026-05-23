@@ -55,6 +55,9 @@ public class Post {
   @Column(name = "published_at")
   private Instant publishedAt;
 
+  @Column(name = "like_count", nullable = false)
+  private long likeCount = 0;
+
   protected Post() {
   }
 
@@ -160,5 +163,9 @@ public class Post {
 
   public void setPublishedAt(Instant publishedAt) {
     this.publishedAt = publishedAt;
+  }
+
+  public long getLikeCount() {
+    return likeCount;
   }
 }

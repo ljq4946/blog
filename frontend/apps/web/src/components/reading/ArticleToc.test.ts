@@ -13,7 +13,7 @@ describe("ArticleToc", () => {
       props: { items, activeId: "install-vue-3" }
     });
 
-    expect(wrapper.text()).toContain("On this page");
+    expect(wrapper.text()).toContain("目录");
     expect(wrapper.get('a[href="#setup-guide"]').text()).toBe("Setup Guide");
     expect(wrapper.get('a[href="#install-vue-3"]').classes()).toContain("is-active");
     expect(wrapper.get('a[href="#install-vue-3"]').classes()).toContain("toc-level-3");

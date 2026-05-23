@@ -70,14 +70,14 @@ function createCodeHeader(language: string, codeText: string) {
   button.type = "button";
   button.className = "copy-code-button";
   button.dataset.test = "copy-code";
-  button.setAttribute("aria-label", "Copy code block");
-  button.textContent = "Copy";
+  button.setAttribute("aria-label", "复制代码块");
+  button.textContent = "复制";
   button.addEventListener("click", async () => {
     try {
       await navigator.clipboard?.writeText(codeText);
-      button.textContent = "Copied";
+      button.textContent = "已复制";
     } catch {
-      button.textContent = "Copy failed";
+      button.textContent = "复制失败";
     }
   });
 

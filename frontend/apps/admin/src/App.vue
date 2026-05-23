@@ -1,6 +1,6 @@
 <template>
   <RouterView v-if="isLogin" />
-  <div v-else class="admin-shell">
+  <div v-else class="admin-shell admin-shell--constructivist">
     <aside class="sidebar">
       <RouterLink class="brand" to="/">
         <span class="brand-mark"></span>
@@ -11,6 +11,7 @@
         <RouterLink to="/categories">分类</RouterLink>
         <RouterLink to="/tags">标签</RouterLink>
         <RouterLink to="/media">媒体</RouterLink>
+        <RouterLink to="/comments">评论</RouterLink>
         <RouterLink to="/about">关于</RouterLink>
       </nav>
       <button class="logout" type="button" @click="logout">退出登录</button>

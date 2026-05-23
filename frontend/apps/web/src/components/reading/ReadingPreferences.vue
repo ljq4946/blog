@@ -1,6 +1,6 @@
 <template>
   <button class="reading-preferences" type="button" @click="toggleTheme">
-    {{ theme === "dark" ? "Light mode" : "Dark mode" }}
+    {{ theme === "dark" ? "浅色模式" : "深色模式" }}
   </button>
 </template>
 

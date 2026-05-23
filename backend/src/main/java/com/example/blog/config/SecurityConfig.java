@@ -25,6 +25,12 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
+  private final CorsProperties corsProperties;
+
+  public SecurityConfig(CorsProperties corsProperties) {
+    this.corsProperties = corsProperties;
+  }
+
   @Bean
   SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter)
       throws Exception {
@@ -63,7 +69,12 @@ public class SecurityConfig {
   @Bean
   CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOriginPatterns(List.of("*"));
+    List<String> allowedOrigins = corsProperties.getAllowedOrigins();
+    if (allowedOrigins.contains("*")) {
+      configuration.setAllowedOriginPatterns(List.of("*"));
+    } else {
+      configuration.setAllowedOrigins(allowedOrigins);
+    }
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("*"));
     configuration.setAllowCredentials(false);

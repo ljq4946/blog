@@ -1,4 +1,16 @@
-import { ApiClient, tokenStorage, type AuthResponse, type Category, type MediaAsset, type PageResponse, type Post, type PostInput, type SitePage, type Tag } from "@blog/shared";
+import {
+  ApiClient,
+  tokenStorage,
+  type AdminComment,
+  type AuthResponse,
+  type Category,
+  type MediaAsset,
+  type PageResponse,
+  type Post,
+  type PostInput,
+  type SitePage,
+  type Tag
+} from "@blog/shared";
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
 export const api = new ApiClient({ baseUrl, getToken: () => tokenStorage.get() });
@@ -52,6 +64,12 @@ export const adminApi = {
   },
   deleteMedia(id: number) {
     return api.delete(`/v1/admin/media/${id}`);
+  },
+  comments() {
+    return api.get<AdminComment[]>("/v1/admin/comments");
+  },
+  deleteComment(id: number) {
+    return api.delete(`/v1/admin/comments/${id}`);
   },
   about() {
     return api.get<SitePage>("/v1/admin/site-pages/about");

@@ -1,14 +1,22 @@
 package com.example.blog;
 
 import com.example.blog.config.AdminProperties;
+import com.example.blog.config.CorsProperties;
 import com.example.blog.config.JwtProperties;
+import com.example.blog.config.SiteProperties;
 import com.example.blog.config.UploadProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties({AdminProperties.class, JwtProperties.class, UploadProperties.class})
+@EnableConfigurationProperties({
+    AdminProperties.class,
+    CorsProperties.class,
+    JwtProperties.class,
+    SiteProperties.class,
+    UploadProperties.class
+})
 public class BlogApplication {
 
   public static void main(String[] args) {

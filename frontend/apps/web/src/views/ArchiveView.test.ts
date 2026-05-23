@@ -79,8 +79,8 @@ describe("ArchiveView", () => {
     expect(searchPostsMock).toHaveBeenCalledWith({ page: 0, size: 10, sort: "publishedAt,desc" });
     expect(categoriesMock).toHaveBeenCalled();
     expect(tagsMock).toHaveBeenCalled();
-    expect(wrapper.text()).toContain("All Articles");
-    expect(wrapper.text()).toContain("1 result");
+    expect(wrapper.text()).toContain("全部文章");
+    expect(wrapper.text()).toContain("1 篇文章");
     expect(wrapper.text()).toContain("Reader Upgrade");
   });
 

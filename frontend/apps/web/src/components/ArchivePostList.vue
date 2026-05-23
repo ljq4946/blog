@@ -11,18 +11,18 @@
         <p v-if="post.summary">{{ post.summary }}</p>
         <div class="archive-post-meta">
           <RouterLink v-if="post.category" :to="`/categories/${post.category.slug}`">{{ post.category.name }}</RouterLink>
-          <span v-else>Uncategorized</span>
+          <span v-else>未分类</span>
           <template v-if="post.tags?.length">
             <RouterLink v-for="tag in post.tags" :key="tag.id" :to="`/tags/${tag.slug}`">#{{ tag.name }}</RouterLink>
           </template>
-          <span v-else>No tags</span>
+          <span v-else>无标签</span>
         </div>
       </div>
     </article>
   </div>
   <section v-else class="empty-state archive-empty">
-    <p>No matching articles</p>
-    <button data-test="empty-reset" type="button" @click="$emit('reset')">Reset filters</button>
+    <p>没有匹配的文章</p>
+    <button data-test="empty-reset" type="button" @click="$emit('reset')">重置筛选</button>
   </section>
 </template>
 

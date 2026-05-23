@@ -48,7 +48,7 @@ describe("ArchivePostList", () => {
 
     await wrapper.get('[data-test="empty-reset"]').trigger("click");
 
-    expect(wrapper.text()).toContain("No matching articles");
+    expect(wrapper.text()).toContain("没有匹配的文章");
     expect(wrapper.emitted("reset")).toHaveLength(1);
   });
 });

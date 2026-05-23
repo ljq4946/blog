@@ -62,7 +62,7 @@
               <article ref="previewArticleRef" class="prose article-renderer article-content" v-html="form.contentHtml"></article>
               <aside class="article-sidebar">
                 <nav class="article-toc" aria-label="文章目录">
-                  <h2>On this page</h2>
+                  <h2>目录</h2>
                   <ol v-if="previewTocItems.length">
                     <li v-for="item in previewTocItems" :key="item.id" :class="`toc-level-${item.level}`">
                       <a :href="`#${item.id}`" @click.prevent="scrollPreviewHeading(item.id)">{{ item.text }}</a>
@@ -573,13 +573,13 @@ function enhancePreviewCodeBlocks(root: HTMLElement) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "copy-code-button";
-    button.textContent = "Copy";
+    button.textContent = "复制";
     button.addEventListener("click", async () => {
       try {
         await navigator.clipboard?.writeText(code.textContent ?? "");
-        button.textContent = "Copied";
+        button.textContent = "已复制";
       } catch {
-        button.textContent = "Copy failed";
+        button.textContent = "复制失败";
       }
     });
 
@@ -722,7 +722,7 @@ onBeforeUnmount(() => {
 }
 
 .toolbar {
-  background: #fffaf0;
+  background: var(--paper-soft);
   border: 2px solid var(--ink);
   padding: 8px;
 }
@@ -980,7 +980,7 @@ onBeforeUnmount(() => {
 }
 
 .article-toc {
-  background: var(--paper);
+  background: var(--paper-soft);
   border: var(--line);
   padding: 14px;
 }
@@ -1030,7 +1030,7 @@ onBeforeUnmount(() => {
 }
 
 .image-asset {
-  background: #fffaf0;
+  background: var(--paper-soft);
   border: 2px solid var(--ink);
   color: var(--ink);
   cursor: pointer;

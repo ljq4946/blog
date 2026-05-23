@@ -14,7 +14,7 @@ describe("ReadingPreferences", () => {
 
     const wrapper = mount(ReadingPreferences);
 
-    expect(wrapper.get("button").text()).toContain("Light mode");
+    expect(wrapper.get("button").text()).toContain("浅色模式");
     expect(document.documentElement.dataset.theme).toBe("dark");
   });
 
@@ -26,6 +26,6 @@ describe("ReadingPreferences", () => {
 
     expect(localStorage.getItem(READING_THEME_KEY)).toBe("dark");
     expect(document.documentElement.dataset.theme).toBe("dark");
-    expect(wrapper.get("button").text()).toContain("Light mode");
+    expect(wrapper.get("button").text()).toContain("浅色模式");
   });
 });

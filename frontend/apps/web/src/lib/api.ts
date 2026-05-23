@@ -1,4 +1,15 @@
-import { ApiClient, type ArchiveMonth, type Category, type PageResponse, type Post, type SitePage, type Tag } from "@blog/shared";
+import {
+  ApiClient,
+  type ArchiveMonth,
+  type Category,
+  type CommentInput,
+  type LikeResponse,
+  type PageResponse,
+  type Post,
+  type PublicComment,
+  type SitePage,
+  type Tag
+} from "@blog/shared";
 
 const api = new ApiClient({ baseUrl: import.meta.env.VITE_API_BASE_URL ?? "/api" });
 
@@ -48,6 +59,18 @@ export const publicApi = {
   },
   post(slug: string) {
     return api.get<Post>(`/v1/posts/${slug}`);
+  },
+  comments(slug: string) {
+    return api.get<PublicComment[]>(`/v1/posts/${slug}/comments`);
+  },
+  createComment(slug: string, input: CommentInput) {
+    return api.post<PublicComment>(`/v1/posts/${slug}/comments`, input);
+  },
+  likes(slug: string) {
+    return api.get<LikeResponse>(`/v1/posts/${slug}/likes`);
+  },
+  likePost(slug: string) {
+    return api.post<LikeResponse>(`/v1/posts/${slug}/likes`);
   },
   categories() {
     return api.get<Category[]>("/v1/categories");

@@ -4,6 +4,7 @@ import ArchiveView from "../views/ArchiveView.vue";
 import HomeView from "../views/HomeView.vue";
 import PostDetailView from "../views/PostDetailView.vue";
 import TaxonomyView from "../views/TaxonomyView.vue";
+import { applySiteMetadata } from "../lib/siteMetadata";
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -15,4 +16,21 @@ export const router = createRouter({
     { path: "/archive", component: ArchiveView },
     { path: "/about", component: AboutView }
   ]
+});
+
+router.afterEach((to) => {
+  if (to.path.startsWith("/posts/")) {
+    applySiteMetadata({ title: "Article", path: to.path });
+    return;
+  }
+
+  const title = to.path === "/archive"
+    ? "Archive"
+    : to.path === "/about"
+      ? "About"
+      : undefined;
+  const description = to.path === "/archive"
+    ? "Browse articles by time, topic, and keyword."
+    : undefined;
+  applySiteMetadata({ title, description, path: to.path });
 });

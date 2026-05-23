@@ -1,8 +1,8 @@
 <template>
   <nav class="pagination-controls" aria-label="Article pagination">
-    <button data-test="previous-page" type="button" :disabled="page <= 0" @click="$emit('change', page - 1)">Previous</button>
-    <span>Page {{ displayPage }} of {{ displayTotal }}</span>
-    <button data-test="next-page" type="button" :disabled="page >= totalPages - 1 || totalPages <= 1" @click="$emit('change', page + 1)">Next</button>
+    <button data-test="previous-page" type="button" :disabled="page <= 0" @click="$emit('change', page - 1)">上一页</button>
+    <span>第 {{ displayPage }} / {{ displayTotal }} 页</span>
+    <button data-test="next-page" type="button" :disabled="page >= totalPages - 1 || totalPages <= 1" @click="$emit('change', page + 1)">下一页</button>
   </nav>
 </template>
 

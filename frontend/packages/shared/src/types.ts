@@ -84,3 +84,27 @@ export interface PageResponse<T> {
   totalElements: number;
   totalPages: number;
 }
+
+export interface CommentInput {
+  nickname: string;
+  email?: string | null;
+  content: string;
+}
+
+export interface PublicComment {
+  id: number;
+  nickname: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface AdminComment extends PublicComment {
+  postId: number;
+  postTitle: string;
+  postSlug: string;
+  email?: string | null;
+}
+
+export interface LikeResponse {
+  count: number;
+}
