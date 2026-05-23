@@ -58,6 +58,8 @@
 .home-poster {
   --masthead-block: 76px;
   --poster-pad: clamp(28px, 4vw, 64px);
+  --poster-display-font: "Impact", "Haettenschweiler", "Arial Black", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --poster-label-font: "Bahnschrift Condensed", "Arial Narrow", "IBM Plex Sans", "Noto Sans SC", "Microsoft YaHei", sans-serif;
   background:
     linear-gradient(90deg, rgba(17, 16, 13, 0.08) 1px, transparent 1px),
     linear-gradient(rgba(17, 16, 13, 0.07) 1px, transparent 1px),
@@ -154,19 +156,27 @@
 }
 
 .home-poster h1 {
+  font-family: var(--poster-display-font);
   font-size: 9.8cqw;
-  max-width: 43cqw;
+  font-weight: 900;
+  letter-spacing: 0;
+  max-width: 34cqw;
   overflow-wrap: anywhere;
 }
 
 .poster-tagline {
   background: var(--ink);
   color: var(--white);
-  font-size: 2.2cqw;
+  font-family: var(--poster-label-font);
+  font-size: 1.45cqw;
   font-weight: 900;
   justify-self: start;
+  letter-spacing: 0;
+  line-height: 0.95;
   margin: 0;
-  padding: 0.7cqw 0.95cqw;
+  max-width: 35cqw;
+  padding: 0.62cqw 0.9cqw 0.58cqw;
+  text-transform: uppercase;
 }
 
 .kicker {
@@ -1264,6 +1274,75 @@
   }
 
   .archive-month {
+    grid-template-columns: 1fr;
+  }
+
+  .archive-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .archive-filter-actions,
+  .pagination-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .archive-discovery-item {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .archive-discovery-title {
+    font-size: 26px;
+  }
+
+  .archive-post-item {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .archive-post-cover {
+    width: 56px;
+  }
+
+  .article-page {
+    width: min(100% - 24px, 1220px);
+    padding-top: 28px;
+  }
+
+  .article-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .article-sidebar {
+    order: -1;
+    position: static;
+  }
+
+  .article-toc {
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .summary {
+    font-size: 19px;
+  }
+
+  .prose {
+    font-size: 17px;
+    max-width: none;
+  }
+
+  .back-to-top {
+    bottom: 12px;
+    right: 12px;
+  }
+
+  .like-panel,
+  .comment-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .comment-form {
     grid-template-columns: 1fr;
   }
 

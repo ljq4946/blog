@@ -18,7 +18,7 @@
         <div class="poster-copy">
           <p class="kicker poster-kicker">Public notebook / Index 4946</p>
           <h1 id="home-poster-title">4946个人站</h1>
-          <p class="poster-tagline">在结构中写作</p>
+          <p class="poster-tagline">In solitude, where we are least alone</p>
         </div>
         <div class="poster-index" aria-label="站点索引">
           <span>WRITING</span>

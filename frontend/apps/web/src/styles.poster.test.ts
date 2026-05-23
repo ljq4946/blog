@@ -61,6 +61,19 @@ describe("poster CSS composition", () => {
     }
   });
 
+  it("uses a compressed poster font stack for the hero typography", () => {
+    const posterRule = ruleBody(".home-poster");
+    const titleRule = ruleBody(".home-poster h1");
+    const taglineRule = ruleBody(".poster-tagline");
+
+    expect(posterRule).toContain("--poster-display-font");
+    expect(posterRule).toContain("--poster-label-font");
+    expect(titleRule).toContain("font-family: var(--poster-display-font)");
+    expect(titleRule).toContain("font-weight: 900");
+    expect(taglineRule).toContain("font-family: var(--poster-label-font)");
+    expect(taglineRule).toContain("text-transform: uppercase");
+  });
+
   it("keeps the red wedge at a stable aspect ratio across breakpoints", () => {
     const wedgeRule = ruleBody(".poster-wedge-main");
     const wedgeRules = ruleBodies(".poster-wedge-main");

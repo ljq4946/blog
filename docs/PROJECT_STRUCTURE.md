@@ -1,6 +1,6 @@
 # Project Structure
 
-本文档说明当前仓库的模块边界、运行入口和维护约定。
+本文档说明当前仓库的模块边界、运行入口和维护约定。1.0 发布前检查清单见 [RELEASE_1_0_CHECKLIST.md](RELEASE_1_0_CHECKLIST.md)。
 
 ## 顶层目录
 
@@ -10,7 +10,7 @@
 ├── frontend/                 # pnpm workspace，包含前台、后台和共享包
 ├── deploy/                   # Docker Compose、Nginx 和环境变量模板
 ├── scripts/                  # Windows 本地开发启动脚本
-├── docs/                     # 项目文档、历史设计文档和实施计划
+├── docs/                     # 项目文档、发布检查清单、历史设计文档和实施计划
 ├── start-project.cmd         # 一键启动入口，调用 scripts/start-project.ps1
 └── README.md                 # 快速入口和常用命令
 ```
@@ -80,6 +80,8 @@
 - `nginx.conf`: 统一入口路由，转发 `/api/`、`/uploads/`、发现文件、健康检查、`/admin/` 和前台页面。
 - `.env.example`: 生产风格环境变量模板，复制为 `.env` 后再修改密钥、域名和数据库密码。
 
+后端镜像使用 Maven 构建 1.0.0 jar，并在 Dockerfile 中使用 `target/*.jar` 复制产物，避免后续版本号变化导致镜像构建失败。前端 Docker build context 由 `frontend/.dockerignore` 排除依赖目录、构建产物、缓存、日志、覆盖率和本地环境文件。
+
 ## 脚本：`scripts/`
 
 保留的脚本都是本地开发启动链路的一部分：
@@ -102,6 +104,7 @@
 - `.pnpm-store/`
 - `uploads/`
 - `logs/`
+- `.claude/`
 - `.superpowers/`
 
 ## 常用命令
@@ -118,7 +121,5 @@ corepack pnpm --dir frontend test
 corepack pnpm --dir frontend build
 
 # 生产风格配置检查
-$env:ENV_FILE=".env.example"
 docker compose -f deploy/docker-compose.yml --env-file deploy/.env.example config
-Remove-Item Env:ENV_FILE
 ```

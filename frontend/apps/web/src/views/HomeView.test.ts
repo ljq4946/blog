@@ -30,7 +30,7 @@ describe("HomeView", () => {
     });
 
     expect(wrapper.get(".home-poster").text()).toContain("4946个人站");
-    expect(wrapper.get(".home-poster").text()).toContain("在结构中写作");
+    expect(wrapper.get(".home-poster").text()).toContain("In solitude, where we are least alone");
     expect(wrapper.text()).not.toContain("模块博客");
     expect(wrapper.text()).not.toContain("公开阅读系统");
   });
