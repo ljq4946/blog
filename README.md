@@ -1,8 +1,8 @@
 # Modular Blog
 
-面向生产部署的模块化博客系统，包含 Java 21 Spring Boot 后端、Vue 3 管理后台、Vue 3 前台站点、共享 TypeScript API/DTO 包，以及 Docker Compose + Nginx 部署入口。
+1.0 版本的模块化博客系统，面向生产部署整理，包含 Java 21 Spring Boot 后端、Vue 3 管理后台、Vue 3 前台站点、共享 TypeScript API/DTO 包，以及 Docker Compose + Nginx 部署入口。
 
-更完整的目录说明见 [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)。
+更完整的目录说明见 [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)，发布前检查见 [docs/RELEASE_1_0_CHECKLIST.md](docs/RELEASE_1_0_CHECKLIST.md)。
 
 ## 项目结构速览
 
@@ -49,6 +49,32 @@ corepack pnpm --dir frontend build
 corepack pnpm test
 corepack pnpm build
 ```
+
+## 1.0 发布前检查
+
+每次部署 1.0 前至少执行：
+
+```powershell
+git status --short --branch
+
+cd backend
+.\mvnw.cmd test
+cd ..
+
+corepack pnpm --dir frontend test
+corepack pnpm --dir frontend build
+
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env.example config
+```
+
+发布前还需要确认：
+
+- 工作区没有未提交的发布相关代码。
+- `deploy/.env` 已从 `deploy/.env.example` 复制并替换所有密钥、管理员账号、域名和数据库密码。
+- `JWT_SECRET` 使用足够长的随机密钥，不复用示例值或开发值。
+- `CORS_ALLOWED_ORIGINS` 设置为公开站点域名，不使用 `*`。
+- MySQL volume 和上传 volume 已纳入备份策略。
+- 本地生成目录、日志、Playwright 临时目录、agent 工具状态和上传样例不参与发布镜像。
 
 ## 生产风格运行
 

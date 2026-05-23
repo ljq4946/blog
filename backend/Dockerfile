@@ -8,7 +8,7 @@ RUN mvn --settings .mvn/settings.xml -q -DskipTests package
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 ENV UPLOAD_DIR=/app/uploads
-COPY --from=build /workspace/target/blog-0.1.0-SNAPSHOT.jar /app/blog.jar
+COPY --from=build /workspace/target/*.jar /app/blog.jar
 RUN apt-get update \
   && apt-get install -y --no-install-recommends curl \
   && rm -rf /var/lib/apt/lists/* \

@@ -2,7 +2,6 @@ services:
   mysql:
     image: mysql:8.0
     restart: unless-stopped
-    env_file: ${ENV_FILE:-.env}
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
@@ -20,7 +19,6 @@ services:
     build:
       context: ../backend
     restart: unless-stopped
-    env_file: ${ENV_FILE:-.env}
     environment:
       DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
       DB_USERNAME: ${MYSQL_USER}
