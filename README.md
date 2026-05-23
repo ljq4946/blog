@@ -1,8 +1,10 @@
 # Modular Blog
 
+
 1.0 版本的模块化博客系统，面向生产部署整理，包含 Java 21 Spring Boot 后端、Vue 3 管理后台、Vue 3 前台站点、共享 TypeScript API/DTO 包，以及 Docker Compose + Nginx 部署入口。
 
 更完整的目录说明见 [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)，发布前检查见 [docs/RELEASE_1_0_CHECKLIST.md](docs/RELEASE_1_0_CHECKLIST.md)。
+
 
 ## 项目结构速览
 
