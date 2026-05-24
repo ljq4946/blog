@@ -27,6 +27,7 @@ describe("Admin App", () => {
     expect(wrapper.get(".brand").text()).toContain("博客管理");
     expect(wrapper.find(".brand-mark").exists()).toBe(true);
     expect(wrapper.get(".sidebar").text()).toContain("文章");
+    expect(wrapper.get(".sidebar").text()).toContain("首页");
     expect(wrapper.get(".sidebar").text()).toContain("分类");
     expect(wrapper.get(".sidebar").text()).toContain("标签");
     expect(wrapper.get(".sidebar").text()).toContain("媒体");

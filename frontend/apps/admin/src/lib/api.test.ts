@@ -22,4 +22,41 @@ describe("adminApi comments", () => {
       ["/api/v1/admin/comments/7", "DELETE"]
     ]);
   });
+
+  it("calls admin home profile load and save endpoints", async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      JSON.stringify({
+        key: "home",
+        musicTitle: "私人电台",
+        musicSubtitle: "深夜写作清单",
+        musicMeta: "lo-fi",
+        musicAudioUrl: "/uploads/focus.mp3",
+        aboutKicker: "About / 4946",
+        aboutTitle: "我是 4946",
+        aboutBody: "公开笔记",
+        focusItems: [{ label: "正在写", text: "首页配置" }],
+        updatedAt: "2026-05-24T00:00:00Z"
+      }),
+      { headers: { "Content-Type": "application/json" } }
+    ));
+    vi.stubGlobal("fetch", fetchMock);
+    const { adminApi } = await import("./api");
+
+    await adminApi.homeProfile();
+    await adminApi.saveHomeProfile({
+      musicTitle: "私人电台",
+      musicSubtitle: "深夜写作清单",
+      musicMeta: "lo-fi",
+      musicAudioUrl: "/uploads/focus.mp3",
+      aboutKicker: "About / 4946",
+      aboutTitle: "我是 4946",
+      aboutBody: "公开笔记",
+      focusItems: [{ label: "正在写", text: "首页配置" }]
+    });
+
+    expect(fetchMock.mock.calls.map((call) => [call[0], call[1]?.method ?? "GET"])).toEqual([
+      ["/api/v1/admin/home-profile", "GET"],
+      ["/api/v1/admin/home-profile", "PUT"]
+    ]);
+  });
 });

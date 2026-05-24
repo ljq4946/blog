@@ -4,6 +4,8 @@ import {
   type AdminComment,
   type AuthResponse,
   type Category,
+  type HomeProfile,
+  type HomeProfileInput,
   type MediaAsset,
   type PageResponse,
   type Post,
@@ -76,5 +78,11 @@ export const adminApi = {
   },
   saveAbout(page: Pick<SitePage, "title" | "contentHtml">) {
     return api.put<SitePage>("/v1/admin/site-pages/about", page);
+  },
+  homeProfile() {
+    return api.get<HomeProfile>("/v1/admin/home-profile");
+  },
+  saveHomeProfile(profile: HomeProfileInput) {
+    return api.put<HomeProfile>("/v1/admin/home-profile", profile);
   }
 };

@@ -61,6 +61,27 @@ export interface SitePage {
   updatedAt: string;
 }
 
+export interface HomeProfileFocusItem {
+  label: string;
+  text: string;
+}
+
+export interface HomeProfileInput {
+  musicTitle: string;
+  musicSubtitle: string;
+  musicMeta: string;
+  musicAudioUrl: string;
+  aboutKicker: string;
+  aboutTitle: string;
+  aboutBody: string;
+  focusItems: HomeProfileFocusItem[];
+}
+
+export interface HomeProfile extends HomeProfileInput {
+  key: string;
+  updatedAt: string;
+}
+
 export interface AuthUser {
   id: number;
   username: string;

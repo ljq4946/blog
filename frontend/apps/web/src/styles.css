@@ -380,6 +380,230 @@
   padding: 44px 0;
 }
 
+.home-interlude {
+  align-items: stretch;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
+  padding-bottom: 56px;
+  padding-top: 56px;
+}
+
+.interlude-module {
+  border: var(--line);
+  display: grid;
+  min-height: 322px;
+  overflow: hidden;
+  padding: 24px;
+  position: relative;
+}
+
+.interlude-module > * {
+  position: relative;
+  z-index: 1;
+}
+
+.module-kicker {
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.home-music-module {
+  align-content: space-between;
+  background: var(--ink);
+  box-shadow: var(--shadow-red);
+  color: var(--white);
+}
+
+.home-music-module::before {
+  background:
+    linear-gradient(132deg, transparent 0 38%, rgba(22, 79, 142, 0.82) 38% 47%, transparent 47%),
+    linear-gradient(168deg, transparent 0 62%, rgba(242, 196, 58, 0.88) 62% 73%, transparent 73%);
+  content: "";
+  inset: 0;
+  opacity: 0.72;
+  pointer-events: none;
+  position: absolute;
+}
+
+.music-layout {
+  align-items: center;
+  display: grid;
+  gap: 22px;
+  grid-template-columns: 156px minmax(0, 1fr);
+}
+
+.music-disc {
+  aspect-ratio: 1;
+  background:
+    radial-gradient(circle, var(--white) 0 11%, transparent 12%),
+    radial-gradient(circle, transparent 0 30%, rgba(255, 253, 246, 0.2) 31% 33%, transparent 34%),
+    var(--red);
+  border: 3px solid var(--white);
+  box-shadow: 9px 9px 0 var(--blue);
+  display: grid;
+  place-items: center;
+  transform: rotate(-7deg);
+}
+
+.music-disc span {
+  aspect-ratio: 1;
+  background: var(--ink);
+  border: 3px solid var(--white);
+  display: block;
+  width: 28%;
+}
+
+.home-music-module.is-playing .music-disc {
+  animation: music-disc-spin 5s linear infinite;
+}
+
+.music-copy h2,
+.home-about-module h2 {
+  font-family: "Archivo Black", "Arial Black", sans-serif;
+  font-size: 46px;
+  line-height: 0.95;
+  margin: 0;
+}
+
+.music-copy p,
+.home-about-module p {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.45;
+  margin: 12px 0 0;
+}
+
+.music-meta {
+  border: 2px solid var(--white);
+  display: inline-flex;
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 6px 8px;
+  text-transform: uppercase;
+}
+
+.music-controls {
+  align-items: center;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: auto minmax(120px, 1fr);
+}
+
+.music-toggle {
+  align-items: center;
+  background: var(--yellow);
+  border: 2px solid var(--white);
+  color: #11100d;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 900;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+}
+
+.music-toggle span {
+  display: inline-grid;
+  font-family: "Arial Black", sans-serif;
+  line-height: 1;
+  min-width: 22px;
+  place-items: center;
+}
+
+.music-progress {
+  background: rgba(255, 253, 246, 0.18);
+  border: 2px solid var(--white);
+  height: 18px;
+  padding: 3px;
+}
+
+.music-progress span {
+  background: var(--yellow);
+  display: block;
+  height: 100%;
+  transition: width 180ms ease, background 180ms ease;
+}
+
+.home-music-module.is-playing .music-progress span {
+  background: var(--red);
+}
+
+.home-about-module {
+  align-content: start;
+  background: var(--yellow);
+  box-shadow: var(--shadow-step);
+  color: #11100d;
+}
+
+.home-about-module::before {
+  background:
+    linear-gradient(90deg, rgba(216, 36, 31, 0.9) 0 14px, transparent 14px 28px),
+    linear-gradient(136deg, transparent 0 60%, rgba(255, 248, 234, 0.68) 60% 75%, transparent 75%);
+  content: "";
+  inset: 0;
+  opacity: 0.7;
+  pointer-events: none;
+  position: absolute;
+}
+
+.home-about-module p {
+  max-width: 58ch;
+}
+
+.about-signals {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+}
+
+.about-signals li {
+  align-items: center;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 92px minmax(0, 1fr);
+  padding: 12px;
+}
+
+.about-signals span {
+  background: var(--red);
+  color: var(--white);
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 5px 7px;
+  text-align: center;
+}
+
+.about-signals strong {
+  font-size: 17px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+@keyframes music-disc-spin {
+  to {
+    transform: rotate(353deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-music-module.is-playing .music-disc {
+    animation: none;
+  }
+
+  .music-progress span {
+    transition: none;
+  }
+}
+
 .latest-posts {
   padding-top: clamp(42px, 6vw, 72px);
 }
@@ -1271,6 +1495,35 @@
   .poster-stage {
     height: min(100%, calc(56.25vw - 27px));
     justify-self: start;
+  }
+
+  .home-interlude {
+    grid-template-columns: 1fr;
+    padding-bottom: 40px;
+    padding-top: 40px;
+  }
+
+  .interlude-module {
+    min-height: auto;
+    padding: 18px;
+  }
+
+  .music-layout,
+  .music-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .music-disc {
+    width: min(156px, 70%);
+  }
+
+  .music-copy h2,
+  .home-about-module h2 {
+    font-size: 34px;
+  }
+
+  .about-signals li {
+    grid-template-columns: 1fr;
   }
 
   .archive-month {

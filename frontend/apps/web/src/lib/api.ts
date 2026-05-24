@@ -3,6 +3,7 @@ import {
   type ArchiveMonth,
   type Category,
   type CommentInput,
+  type HomeProfile,
   type LikeResponse,
   type PageResponse,
   type Post,
@@ -83,5 +84,8 @@ export const publicApi = {
   },
   about() {
     return api.get<SitePage>("/v1/site-pages/about");
+  },
+  homeProfile() {
+    return api.get<HomeProfile>("/v1/home-profile");
   }
 };
