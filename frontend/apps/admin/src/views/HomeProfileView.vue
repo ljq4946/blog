@@ -29,7 +29,44 @@
           <el-input v-model="form.musicMeta" data-test="music-meta" />
         </el-form-item>
         <el-form-item label="音频 URL">
-          <el-input v-model="form.musicAudioUrl" data-test="music-audio-url" placeholder="/uploads/focus.mp3" />
+          <div class="audio-picker">
+            <el-input v-model="form.musicAudioUrl" data-test="music-audio-url" placeholder="/uploads/focus.mp3" />
+            <div class="audio-picker-actions">
+              <el-select
+                v-model="form.musicAudioUrl"
+                data-test="music-audio-library"
+                placeholder="从媒体库选择"
+                filterable
+                clearable
+                :disabled="!audioAssets.length"
+              >
+                <el-option
+                  v-for="asset in audioAssets"
+                  :key="asset.id"
+                  :label="audioAssetLabel(asset)"
+                  :value="asset.url"
+                />
+              </el-select>
+              <input
+                ref="audioFileInputRef"
+                class="audio-file-input"
+                data-test="music-audio-file"
+                type="file"
+                accept="audio/*,.aac,.flac,.m4a,.mp3,.mp4,.oga,.ogg,.wav,.webm"
+                @change="uploadAudio"
+              />
+              <el-button data-test="music-audio-upload" :loading="uploadingAudio" @click="openAudioFilePicker">
+                上传音频
+              </el-button>
+            </div>
+            <div v-if="form.musicAudioUrl" class="audio-preview">
+              <audio data-test="music-audio-preview" controls :src="form.musicAudioUrl"></audio>
+              <div class="audio-preview-copy">
+                <strong>{{ selectedAudioAsset?.originalName ?? "自定义音频" }}</strong>
+                <span>{{ selectedAudioAsset ? formatAssetSize(selectedAudioAsset.size) : form.musicAudioUrl }}</span>
+              </div>
+            </div>
+          </div>
         </el-form-item>
       </article>
 
@@ -70,8 +107,8 @@
 </template>
 
 <script setup lang="ts">
-import type { HomeProfile, HomeProfileInput } from "@blog/shared";
-import { onMounted, reactive, ref } from "vue";
+import type { HomeProfile, HomeProfileInput, MediaAsset } from "@blog/shared";
+import { computed, onMounted, reactive, ref } from "vue";
 import { adminApi } from "../lib/api";
 
 const defaultForm: HomeProfileInput = {
@@ -90,9 +127,22 @@ const defaultForm: HomeProfileInput = {
 };
 
 const form = reactive<HomeProfileInput>(cloneInput(defaultForm));
+const mediaAssets = ref<MediaAsset[]>([]);
+const audioFileInputRef = ref<HTMLInputElement | null>(null);
 const saving = ref(false);
+const uploadingAudio = ref(false);
 const error = ref("");
 const saveStatus = ref("");
+
+const audioFilePattern = /\.(aac|flac|m4a|mp3|mp4|oga|ogg|wav|webm)$/i;
+const audioAssets = computed(() => mediaAssets.value.filter(isAudioAsset));
+const selectedAudioAsset = computed(
+  () => audioAssets.value.find((asset) => asset.url === form.musicAudioUrl) ?? null
+);
+
+function isAudioAsset(asset: MediaAsset) {
+  return asset.mimeType.startsWith("audio/") || audioFilePattern.test(asset.originalName) || audioFilePattern.test(asset.url);
+}
 
 function cloneInput(input: HomeProfileInput): HomeProfileInput {
   return {
@@ -122,12 +172,57 @@ function payload(): HomeProfileInput {
   return cloneInput(form);
 }
 
+function formatAssetSize(size: number) {
+  return `${Math.ceil(size / 1024)} KB`;
+}
+
+function audioAssetLabel(asset: MediaAsset) {
+  return `${asset.originalName} · ${formatAssetSize(asset.size)}`;
+}
+
+function openAudioFilePicker() {
+  audioFileInputRef.value?.click();
+}
+
 async function load() {
   error.value = "";
   try {
     assignProfile(await adminApi.homeProfile());
   } catch (err) {
     error.value = err instanceof Error ? err.message : "首页配置加载失败";
+  }
+}
+
+async function loadMedia() {
+  try {
+    mediaAssets.value = (await adminApi.media()).content;
+  } catch {
+    mediaAssets.value = [];
+  }
+}
+
+async function uploadAudio(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  uploadingAudio.value = true;
+  error.value = "";
+  saveStatus.value = "";
+  try {
+    const asset = await adminApi.uploadMedia(file);
+    form.musicAudioUrl = asset.url;
+    await loadMedia();
+    if (!mediaAssets.value.some((current) => current.id === asset.id)) {
+      mediaAssets.value = [asset, ...mediaAssets.value];
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : "音频上传失败";
+  } finally {
+    uploadingAudio.value = false;
+    input.value = "";
   }
 }
 
@@ -145,7 +240,10 @@ async function save() {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  void load();
+  void loadMedia();
+});
 </script>
 
 <style scoped>
@@ -210,9 +308,64 @@ onMounted(load);
   grid-template-columns: minmax(120px, 0.3fr) minmax(0, 1fr);
 }
 
+.audio-picker {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.audio-picker-actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.audio-file-input {
+  display: none;
+}
+
+.audio-preview {
+  align-items: center;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 0.45fr);
+  padding: 10px;
+}
+
+.audio-preview audio {
+  width: 100%;
+}
+
+.audio-preview-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.audio-preview-copy strong,
+.audio-preview-copy span {
+  overflow-wrap: anywhere;
+}
+
+.audio-preview-copy strong {
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.audio-preview-copy span {
+  color: #5e5748;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 @media (max-width: 760px) {
   .home-profile-grid,
-  .focus-row {
+  .focus-row,
+  .audio-picker-actions,
+  .audio-preview {
     grid-template-columns: 1fr;
   }
 }

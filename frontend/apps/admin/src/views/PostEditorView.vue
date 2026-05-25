@@ -742,6 +742,14 @@ onBeforeUnmount(() => {
   padding: 14px;
 }
 
+.editor-surface :deep(.ProseMirror img) {
+  border: var(--line);
+  display: block;
+  height: auto;
+  margin: 16px 0;
+  max-width: min(100%, 760px);
+}
+
 .mode-actions {
   justify-content: flex-end;
 }

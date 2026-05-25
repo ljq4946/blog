@@ -21,8 +21,9 @@ describe("poster CSS composition", () => {
     const stageRules = ruleBodies(".poster-stage");
 
     expect(posterRule).toContain("--masthead-block: 76px");
-    expect(posterRule).toContain("height: calc(100svh - var(--masthead-block))");
-    expect(posterRule).not.toMatch(/\bmin-height\s*:/);
+    expect(posterRule).toContain("--poster-block:");
+    expect(posterRule).toContain("height: var(--poster-block)");
+    expect(posterRule).toContain("--poster-next-peek:");
     expect(stageRules.some((rule) => rule.includes("calc(56.25vw - 27px)"))).toBe(true);
   });
 
