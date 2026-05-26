@@ -28,6 +28,16 @@ public class MediaService {
       "image/gif",
       "image/webp",
       "image/svg+xml",
+      "audio/aac",
+      "audio/flac",
+      "audio/mpeg",
+      "audio/mp4",
+      "audio/ogg",
+      "audio/wav",
+      "audio/webm",
+      "audio/x-m4a",
+      "audio/x-wav",
+      "video/mp4",
       "application/pdf",
       "text/plain");
 

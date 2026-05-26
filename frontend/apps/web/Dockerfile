@@ -4,6 +4,7 @@ ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/shared ./packages/shared
+COPY apps/constructivist.css ./apps/constructivist.css
 COPY apps/web ./apps/web
 RUN corepack enable && corepack prepare pnpm@11.1.2 --activate
 RUN pnpm install --frozen-lockfile

@@ -52,7 +52,8 @@ public class SecurityConfig {
                 "/api/v1/categories",
                 "/api/v1/tags",
                 "/api/v1/archive",
-                "/api/v1/site-pages/about").permitAll()
+                "/api/v1/site-pages/about",
+                "/api/v1/home-profile").permitAll()
             .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
             .requestMatchers("/api/v1/auth/me").authenticated()
             .anyRequest().permitAll())

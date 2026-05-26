@@ -97,6 +97,21 @@ class MediaControllerTest {
   }
 
   @Test
+  void authenticatedAdminCanUploadAudioMedia() throws Exception {
+    String token = login();
+    MockMultipartFile file = new MockMultipartFile(
+        "file", "focus.mp3", "audio/mpeg", "fake audio".getBytes(StandardCharsets.UTF_8));
+
+    mvc.perform(multipart("/api/v1/admin/media")
+            .file(file)
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.originalName").value("focus.mp3"))
+        .andExpect(jsonPath("$.mimeType").value("audio/mpeg"))
+        .andExpect(jsonPath("$.url").value(containsString("/uploads/")));
+  }
+
+  @Test
   void invalidMimeTypesAreRejected() throws Exception {
     String token = login();
     MockMultipartFile file = new MockMultipartFile(

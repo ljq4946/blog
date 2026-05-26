@@ -234,6 +234,12 @@ describe("PostEditorView", () => {
     );
   });
 
+  it("constrains inserted images inside the editor surface", async () => {
+    expect(postEditorSource).toMatch(
+      /\.editor-surface\s+:deep\(\.ProseMirror img\)\s*{[^}]*height:\s*auto;[^}]*max-width:\s*min\(100%,\s*760px\);/s
+    );
+  });
+
   it("restores a newer local recovery draft", async () => {
     setRecoverySnapshot();
     const wrapper = mountEditor();
