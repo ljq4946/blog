@@ -1,6 +1,7 @@
 package com.example.blog.homeprofile;
 
 import com.example.blog.TestApplicationProperties;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -9,11 +10,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -24,6 +23,14 @@ class HomeProfileControllerTest {
 
   @Autowired
   MockMvc mvc;
+
+  @Autowired
+  HomeProfileRepository profiles;
+
+  @BeforeEach
+  void setUp() {
+    profiles.deleteAll();
+  }
 
   @Test
   void publicProfileReturnsDefaultsWhenNotConfigured() throws Exception {
@@ -70,7 +77,7 @@ class HomeProfileControllerTest {
         .andExpect(jsonPath("$.musicTitle").value("午后电台"))
         .andExpect(jsonPath("$.musicSubtitle").value("调试时听"))
         .andExpect(jsonPath("$.aboutTitle").value("我是编辑后的 4946"))
-        .andExpect(content().string(containsString("环境音乐")));
+        .andExpect(jsonPath("$.focusItems[1].text").value("环境音乐"));
   }
 
   @Test
