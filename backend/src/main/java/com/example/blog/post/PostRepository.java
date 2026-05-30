@@ -23,6 +23,11 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
   @EntityGraph(attributePaths = {"category", "tags", "topics", "series", "series.primaryTopic"})
   List<Post> findByTopicsSlugAndStatusOrderByPublishedAtDescCreatedAtDesc(String slug, PostStatus status);
 
+  @EntityGraph(attributePaths = {"category", "tags", "topics", "series", "series.primaryTopic"})
+  List<Post> findBySeriesSlugAndStatusOrderBySeriesOrderAsc(String slug, PostStatus status);
+
+  boolean existsBySeriesId(Long seriesId);
+
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("update Post p set p.likeCount = p.likeCount + 1 where p.slug = :slug and p.status = :status")
   int incrementLikeCount(@Param("slug") String slug, @Param("status") PostStatus status);
