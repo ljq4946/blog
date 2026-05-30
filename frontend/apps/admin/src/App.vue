@@ -11,6 +11,8 @@
         <RouterLink to="/home-profile">首页</RouterLink>
         <RouterLink to="/categories">分类</RouterLink>
         <RouterLink to="/tags">标签</RouterLink>
+        <RouterLink to="/topics">专题</RouterLink>
+        <RouterLink to="/series">系列</RouterLink>
         <RouterLink to="/media">媒体</RouterLink>
         <RouterLink to="/comments">评论</RouterLink>
         <RouterLink to="/about">关于</RouterLink>

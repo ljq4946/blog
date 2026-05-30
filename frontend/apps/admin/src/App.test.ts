@@ -33,6 +33,8 @@ describe("Admin App", () => {
     expect(wrapper.get(".sidebar").text()).toContain("媒体");
     expect(wrapper.get(".sidebar").text()).toContain("评论");
     expect(wrapper.get(".sidebar").text()).toContain("关于");
+    expect(wrapper.find("a[href='/topics']").exists()).toBe(true);
+    expect(wrapper.find("a[href='/series']").exists()).toBe(true);
     expect(wrapper.find("[data-test='router-view']").exists()).toBe(true);
   });
 });
