@@ -49,7 +49,8 @@ const post: Post = {
   seriesOrder: 2,
   previousSeriesPost: { id: 10, title: "Part One", slug: "part-one", seriesOrder: 1 },
   nextSeriesPost: { id: 12, title: "Part Three", slug: "part-three", seriesOrder: 3 },
-  tags: [{ id: 2, name: "Vue", slug: "vue" }]
+  tags: [{ id: 2, name: "Vue", slug: "vue" }],
+  updatedAt: "2026-05-21T00:00:00Z"
 };
 
 describe("PostDetailView", () => {
@@ -70,6 +71,9 @@ describe("PostDetailView", () => {
     likesMock.mockResolvedValue({ count: 0 });
     likePostMock.mockResolvedValue({ count: 1 });
     document.documentElement.removeAttribute("data-theme");
+    document.head.querySelectorAll("meta[data-managed='site'], link[data-managed='site'], script[data-managed='site']")
+      .forEach((node) => node.remove());
+    document.title = "";
     localStorage.clear();
   });
 
@@ -101,6 +105,20 @@ describe("PostDetailView", () => {
     expect(wrapper.find(".reading-preferences").exists()).toBe(true);
     expect(wrapper.find('[data-test="back-to-top"]').exists()).toBe(true);
     expect(wrapper.get('[data-test="back-to-top"]').text()).toBe("返回顶部");
+    expect(document.title).toBe("Reader Upgrade | 4946 Blog");
+    expect(document.querySelector("meta[name='description']")?.getAttribute("content")).toBe("A better long-form reading page.");
+    expect(document.querySelector("meta[property='og:image']")?.getAttribute("content")).toBe("http://localhost:5174/uploads/cover.png");
+    expect(document.querySelector("meta[property='article:published_time']")?.getAttribute("content")).toBe("2026-05-20T00:00:00Z");
+    expect(document.querySelector("meta[property='article:modified_time']")?.getAttribute("content")).toBe("2026-05-21T00:00:00Z");
+    expect(JSON.parse(document.querySelector("script[type='application/ld+json'][data-managed='site']")?.textContent || "{}"))
+      .toMatchObject({
+        "@type": "BlogPosting",
+        headline: "Reader Upgrade",
+        description: "A better long-form reading page.",
+        image: "http://localhost:5174/uploads/cover.png",
+        datePublished: "2026-05-20T00:00:00Z",
+        dateModified: "2026-05-21T00:00:00Z"
+      });
   });
 
   it("renders comments and submits a plain-text comment", async () => {

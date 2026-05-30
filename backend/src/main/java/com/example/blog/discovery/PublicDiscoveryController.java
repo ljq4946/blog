@@ -4,6 +4,8 @@ import com.example.blog.config.SiteProperties;
 import com.example.blog.post.Post;
 import com.example.blog.post.PostRepository;
 import com.example.blog.post.PostStatus;
+import com.example.blog.series.SeriesRepository;
+import com.example.blog.topic.TopicRepository;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,10 +21,18 @@ public class PublicDiscoveryController {
   private static final DateTimeFormatter RFC_1123 = DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneOffset.UTC);
 
   private final PostRepository posts;
+  private final TopicRepository topics;
+  private final SeriesRepository series;
   private final SiteProperties site;
 
-  public PublicDiscoveryController(PostRepository posts, SiteProperties site) {
+  public PublicDiscoveryController(
+      PostRepository posts,
+      TopicRepository topics,
+      SeriesRepository series,
+      SiteProperties site) {
     this.posts = posts;
+    this.topics = topics;
+    this.series = series;
     this.site = site;
   }
 
@@ -33,7 +43,12 @@ public class PublicDiscoveryController {
         <?xml version="1.0" encoding="UTF-8"?>
         <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
         """);
-    List.of("/", "/archive", "/about").forEach(path -> appendSitemapUrl(xml, baseUrl + path));
+    List.of("/", "/archive", "/about", "/topics", "/series")
+        .forEach(path -> appendSitemapUrl(xml, baseUrl + path));
+    topics.findAllByOrderBySortOrderAscNameAsc()
+        .forEach(topic -> appendSitemapUrl(xml, baseUrl + "/topics/" + topic.getSlug()));
+    series.findAllByOrderBySortOrderAscNameAsc()
+        .forEach(item -> appendSitemapUrl(xml, baseUrl + "/series/" + item.getSlug()));
     posts.findByStatusOrderByPublishedAtDescCreatedAtDesc(PostStatus.PUBLISHED)
         .forEach(post -> appendSitemapUrl(xml, baseUrl + "/posts/" + post.getSlug()));
     xml.append("</urlset>\n");

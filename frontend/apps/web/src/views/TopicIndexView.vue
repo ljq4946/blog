@@ -20,10 +20,16 @@ import type { Topic } from "@blog/shared";
 import { onMounted, ref } from "vue";
 import EmptyState from "../components/EmptyState.vue";
 import { publicApi } from "../lib/api";
+import { applySiteMetadata } from "../lib/siteMetadata";
 
 const topics = ref<Topic[]>([]);
 
 onMounted(async () => {
+  applySiteMetadata({
+    title: "Topics",
+    description: "Browse long-lived technical topics.",
+    path: "/topics"
+  });
   try {
     topics.value = await publicApi.topics();
   } catch {

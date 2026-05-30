@@ -21,7 +21,15 @@ describe("visitor site metadata", () => {
     applySiteMetadata({
       title: "Reader Upgrade",
       description: "A better article page",
-      path: "/posts/reader-upgrade"
+      path: "/posts/reader-upgrade",
+      image: "/uploads/cover.png",
+      publishedTime: "2026-05-20T00:00:00Z",
+      modifiedTime: "2026-05-21T00:00:00Z",
+      structuredData: {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        headline: "Reader Upgrade"
+      }
     });
 
     expect(document.title).toBe("Reader Upgrade | 4946 Blog");
@@ -29,5 +37,38 @@ describe("visitor site metadata", () => {
     expect(document.querySelector("link[rel='canonical']")?.getAttribute("href")).toBe("http://localhost:5174/posts/reader-upgrade");
     expect(document.querySelector("meta[property='og:title']")?.getAttribute("content")).toBe("Reader Upgrade | 4946 Blog");
     expect(document.querySelector("meta[property='og:description']")?.getAttribute("content")).toBe("A better article page");
+    expect(document.querySelector("meta[property='og:image']")?.getAttribute("content")).toBe("http://localhost:5174/uploads/cover.png");
+    expect(document.querySelector("meta[property='article:published_time']")?.getAttribute("content")).toBe("2026-05-20T00:00:00Z");
+    expect(document.querySelector("meta[property='article:modified_time']")?.getAttribute("content")).toBe("2026-05-21T00:00:00Z");
+    expect(document.querySelector("meta[name='twitter:card']")?.getAttribute("content")).toBe("summary_large_image");
+    expect(document.querySelector("meta[name='twitter:title']")?.getAttribute("content")).toBe("Reader Upgrade | 4946 Blog");
+    expect(document.querySelector("meta[name='twitter:image']")?.getAttribute("content")).toBe("http://localhost:5174/uploads/cover.png");
+    expect(JSON.parse(document.querySelector("script[type='application/ld+json'][data-managed='site']")?.textContent || "{}"))
+      .toMatchObject({ "@type": "BlogPosting", headline: "Reader Upgrade" });
+  });
+
+  it("updates managed tags without duplicates and clears article-only metadata", async () => {
+    const { applySiteMetadata } = await import("./lib/siteMetadata");
+
+    applySiteMetadata({
+      title: "Reader Upgrade",
+      description: "A better article page",
+      path: "/posts/reader-upgrade",
+      image: "/uploads/cover.png",
+      publishedTime: "2026-05-20T00:00:00Z",
+      structuredData: { "@context": "https://schema.org", "@type": "BlogPosting" }
+    });
+    applySiteMetadata({
+      title: "Archive",
+      description: "Browse articles",
+      path: "/archive"
+    });
+
+    expect(document.querySelectorAll("meta[property='og:title']")).toHaveLength(1);
+    expect(document.querySelectorAll("link[rel='canonical']")).toHaveLength(1);
+    expect(document.querySelector("meta[property='og:type']")?.getAttribute("content")).toBe("website");
+    expect(document.querySelector("meta[property='og:image']")).toBeNull();
+    expect(document.querySelector("meta[property='article:published_time']")).toBeNull();
+    expect(document.querySelector("script[type='application/ld+json'][data-managed='site']")).toBeNull();
   });
 });

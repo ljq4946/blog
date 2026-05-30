@@ -1,5 +1,5 @@
 import { RouterLinkStub, flushPromises, mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import SeriesIndexView from "./SeriesIndexView.vue";
 
 vi.mock("../lib/api", () => ({
@@ -16,6 +16,12 @@ vi.mock("../lib/api", () => ({
 }));
 
 describe("SeriesIndexView", () => {
+  afterEach(() => {
+    document.head.querySelectorAll("meta[data-managed='site'], link[data-managed='site'], script[data-managed='site']")
+      .forEach((node) => node.remove());
+    document.title = "";
+  });
+
   it("renders public series", async () => {
     const wrapper = mount(SeriesIndexView, {
       global: { stubs: { RouterLink: RouterLinkStub } }
@@ -24,5 +30,7 @@ describe("SeriesIndexView", () => {
 
     expect(wrapper.text()).toContain("Build Blog");
     expect(wrapper.text()).toContain("Spring Boot");
+    expect(document.title).toBe("Series | 4946 Blog");
+    expect(document.querySelector("meta[name='description']")?.getAttribute("content")).toBe("Read complete technical paths in order.");
   });
 });

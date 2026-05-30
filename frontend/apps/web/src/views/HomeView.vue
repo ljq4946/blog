@@ -118,6 +118,7 @@ import { onBeforeUnmount, onMounted, ref } from "vue";
 import EmptyState from "../components/EmptyState.vue";
 import PostCard from "../components/PostCard.vue";
 import { publicApi } from "../lib/api";
+import { absoluteUrl, applySiteMetadata } from "../lib/siteMetadata";
 
 const defaultHomeProfile: HomeProfile = {
   key: "home",
@@ -246,6 +247,15 @@ function updatePosterScroll() {
 }
 
 onMounted(async () => {
+  applySiteMetadata({
+    path: "/",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "4946 Blog",
+      url: absoluteUrl("/")
+    }
+  });
   updatePosterScroll();
   updateListeningTime();
   listeningClockId = window.setInterval(updateListeningTime, 60_000);

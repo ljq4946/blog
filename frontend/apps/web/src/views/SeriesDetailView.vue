@@ -27,6 +27,7 @@ import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import EmptyState from "../components/EmptyState.vue";
 import { publicApi } from "../lib/api";
+import { absoluteUrl, applySiteMetadata } from "../lib/siteMetadata";
 
 const route = useRoute();
 const slug = String(route.params.slug);
@@ -35,6 +36,36 @@ const detail = ref<SeriesDetail | null>(null);
 onMounted(async () => {
   try {
     detail.value = await publicApi.series(slug);
+    const series = detail.value.series;
+    applySiteMetadata({
+      title: series.name,
+      description: series.description,
+      path: `/series/${series.slug}`,
+      structuredData: {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: series.name,
+        description: series.description,
+        url: absoluteUrl(`/series/${series.slug}`),
+        about: series.primaryTopic
+          ? { "@type": "Thing", name: series.primaryTopic.name, url: absoluteUrl(`/topics/${series.primaryTopic.slug}`) }
+          : undefined,
+        hasPart: detail.value.posts.map((post) => ({
+          "@type": "BlogPosting",
+          headline: post.title,
+          position: post.seriesOrder,
+          url: absoluteUrl(`/posts/${post.slug}`)
+        })),
+        breadcrumb: {
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
+            { "@type": "ListItem", position: 2, name: "Series", item: absoluteUrl("/series") },
+            { "@type": "ListItem", position: 3, name: series.name, item: absoluteUrl(`/series/${series.slug}`) }
+          ]
+        }
+      }
+    });
   } catch {
     detail.value = null;
   }

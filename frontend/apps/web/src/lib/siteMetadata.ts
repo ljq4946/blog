@@ -7,6 +7,9 @@ export interface SiteMetadataInput {
   description?: string | null;
   path?: string;
   image?: string | null;
+  publishedTime?: string | null;
+  modifiedTime?: string | null;
+  structuredData?: Record<string, unknown> | null;
 }
 
 export function applySiteMetadata(input: SiteMetadataInput = {}) {
@@ -14,6 +17,7 @@ export function applySiteMetadata(input: SiteMetadataInput = {}) {
   const title = input.title?.trim() ? `${input.title.trim()} | ${SITE_NAME}` : SITE_NAME;
   const url = absoluteUrl(input.path || "/");
   const image = input.image ? absoluteUrl(input.image) : "";
+  const type = input.path?.startsWith("/posts/") ? "article" : "website";
 
   document.title = title;
   setMeta("name", "description", description);
@@ -21,10 +25,15 @@ export function applySiteMetadata(input: SiteMetadataInput = {}) {
   setMeta("property", "og:title", title);
   setMeta("property", "og:description", description);
   setMeta("property", "og:url", url);
-  setMeta("property", "og:type", input.path?.startsWith("/posts/") ? "article" : "website");
-  if (image) {
-    setMeta("property", "og:image", image);
-  }
+  setMeta("property", "og:type", type);
+  setOptionalMeta("property", "og:image", image || null);
+  setOptionalMeta("property", "article:published_time", type === "article" ? input.publishedTime : null);
+  setOptionalMeta("property", "article:modified_time", type === "article" ? input.modifiedTime : null);
+  setMeta("name", "twitter:card", image ? "summary_large_image" : "summary");
+  setMeta("name", "twitter:title", title);
+  setMeta("name", "twitter:description", description);
+  setOptionalMeta("name", "twitter:image", image || null);
+  setStructuredData(input.structuredData ?? null);
 }
 
 export function absoluteUrl(path: string) {
@@ -46,6 +55,14 @@ function setMeta(attribute: "name" | "property", key: string, content: string) {
   element.setAttribute("content", content);
 }
 
+function setOptionalMeta(attribute: "name" | "property", key: string, content?: string | null) {
+  if (!content) {
+    document.head.querySelector(`meta[${attribute}='${key}']`)?.remove();
+    return;
+  }
+  setMeta(attribute, key, content);
+}
+
 function setLink(rel: string, href: string) {
   let element = document.head.querySelector(`link[rel='${rel}']`);
   if (!element) {
@@ -55,4 +72,20 @@ function setLink(rel: string, href: string) {
     document.head.appendChild(element);
   }
   element.setAttribute("href", href);
+}
+
+function setStructuredData(data: Record<string, unknown> | null) {
+  const selector = "script[type='application/ld+json'][data-managed='site']";
+  let element = document.head.querySelector<HTMLScriptElement>(selector);
+  if (!data) {
+    element?.remove();
+    return;
+  }
+  if (!element) {
+    element = document.createElement("script");
+    element.type = "application/ld+json";
+    element.setAttribute("data-managed", "site");
+    document.head.appendChild(element);
+  }
+  element.textContent = JSON.stringify(data);
 }

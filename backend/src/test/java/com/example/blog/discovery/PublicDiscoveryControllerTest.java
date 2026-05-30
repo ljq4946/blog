@@ -4,6 +4,10 @@ import com.example.blog.TestApplicationProperties;
 import com.example.blog.post.Post;
 import com.example.blog.post.PostRepository;
 import com.example.blog.post.PostStatus;
+import com.example.blog.series.Series;
+import com.example.blog.series.SeriesRepository;
+import com.example.blog.topic.Topic;
+import com.example.blog.topic.TopicRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,10 +41,19 @@ class PublicDiscoveryControllerTest {
   MockMvc mvc;
   @Autowired
   PostRepository posts;
+  @Autowired
+  TopicRepository topics;
+  @Autowired
+  SeriesRepository series;
 
   @BeforeEach
   void setUp() {
     posts.deleteAll();
+    series.deleteAll();
+    topics.deleteAll();
+
+    Topic spring = topics.save(new Topic("Spring Boot", "spring-boot", "Backend topic", 0));
+    series.save(new Series("Build Blog", "build-blog", "Project series", spring, 0));
 
     Post first = new Post("First Public", "first-public", "First summary", "<p>Hello & welcome</p>", PostStatus.PUBLISHED);
     first.setPublishedAt(Instant.parse("2026-05-20T00:00:00Z"));
@@ -61,6 +74,10 @@ class PublicDiscoveryControllerTest {
         .andExpect(content().string(containsString("<loc>https://blog.example.com/</loc>")))
         .andExpect(content().string(containsString("<loc>https://blog.example.com/archive</loc>")))
         .andExpect(content().string(containsString("<loc>https://blog.example.com/about</loc>")))
+        .andExpect(content().string(containsString("<loc>https://blog.example.com/topics</loc>")))
+        .andExpect(content().string(containsString("<loc>https://blog.example.com/topics/spring-boot</loc>")))
+        .andExpect(content().string(containsString("<loc>https://blog.example.com/series</loc>")))
+        .andExpect(content().string(containsString("<loc>https://blog.example.com/series/build-blog</loc>")))
         .andExpect(content().string(containsString("<loc>https://blog.example.com/posts/first-public</loc>")))
         .andExpect(content().string(not(containsString("draft-post"))));
   }

@@ -102,7 +102,7 @@ import ReadingPreferences from "../components/reading/ReadingPreferences.vue";
 import ReadingProgress from "../components/reading/ReadingProgress.vue";
 import type { TocItem } from "../features/reading/articleEnhancements";
 import { publicApi } from "../lib/api";
-import { applySiteMetadata } from "../lib/siteMetadata";
+import { absoluteUrl, applySiteMetadata } from "../lib/siteMetadata";
 
 const LIKED_POSTS_KEY = "blog-liked-posts";
 
@@ -228,7 +228,24 @@ onMounted(async () => {
       title: post.value.title,
       description: post.value.summary,
       path: `/posts/${post.value.slug}`,
-      image: post.value.coverMediaUrl
+      image: post.value.coverMediaUrl,
+      publishedTime: post.value.publishedAt,
+      modifiedTime: post.value.updatedAt ?? post.value.publishedAt,
+      structuredData: {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        headline: post.value.title,
+        description: post.value.summary,
+        image: post.value.coverMediaUrl ? absoluteUrl(post.value.coverMediaUrl) : undefined,
+        datePublished: post.value.publishedAt,
+        dateModified: post.value.updatedAt ?? post.value.publishedAt,
+        mainEntityOfPage: absoluteUrl(`/posts/${post.value.slug}`),
+        articleSection: post.value.category?.name,
+        keywords: [
+          ...(post.value.topics ?? []).map((topic) => topic.name),
+          ...(post.value.tags ?? []).map((tag) => tag.name)
+        ]
+      }
     });
     try {
       await loadInteractions(slug);

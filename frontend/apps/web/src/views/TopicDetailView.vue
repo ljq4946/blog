@@ -28,6 +28,7 @@ import { useRoute } from "vue-router";
 import EmptyState from "../components/EmptyState.vue";
 import PostCard from "../components/PostCard.vue";
 import { publicApi } from "../lib/api";
+import { absoluteUrl, applySiteMetadata } from "../lib/siteMetadata";
 
 const route = useRoute();
 const slug = String(route.params.slug);
@@ -36,6 +37,32 @@ const detail = ref<TopicDetail | null>(null);
 onMounted(async () => {
   try {
     detail.value = await publicApi.topic(slug);
+    const topic = detail.value.topic;
+    applySiteMetadata({
+      title: topic.name,
+      description: topic.description,
+      path: `/topics/${topic.slug}`,
+      structuredData: {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: topic.name,
+        description: topic.description,
+        url: absoluteUrl(`/topics/${topic.slug}`),
+        hasPart: detail.value.posts.map((post) => ({
+          "@type": "BlogPosting",
+          headline: post.title,
+          url: absoluteUrl(`/posts/${post.slug}`)
+        })),
+        breadcrumb: {
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
+            { "@type": "ListItem", position: 2, name: "Topics", item: absoluteUrl("/topics") },
+            { "@type": "ListItem", position: 3, name: topic.name, item: absoluteUrl(`/topics/${topic.slug}`) }
+          ]
+        }
+      }
+    });
   } catch {
     detail.value = null;
   }

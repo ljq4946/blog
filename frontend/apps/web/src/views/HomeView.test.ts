@@ -40,6 +40,9 @@ describe("HomeView", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    document.head.querySelectorAll("meta[data-managed='site'], link[data-managed='site'], script[data-managed='site']")
+      .forEach((node) => node.remove());
+    document.title = "";
   });
 
   it("renders the personal poster hero with the default tagline", () => {
@@ -57,6 +60,26 @@ describe("HomeView", () => {
     expect(wrapper.get(".home-poster").text()).toContain("In solitude, where we are least alone");
     expect(wrapper.text()).not.toContain("模块博客");
     expect(wrapper.text()).not.toContain("公开阅读系统");
+  });
+
+  it("sets website structured data for the public homepage", async () => {
+    postsMock.mockResolvedValue([]);
+
+    mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: { template: "<a><slot /></a>" }
+        }
+      }
+    });
+    await flushPromises();
+
+    expect(JSON.parse(document.querySelector("script[type='application/ld+json'][data-managed='site']")?.textContent || "{}"))
+      .toMatchObject({
+        "@type": "WebSite",
+        name: "4946 Blog",
+        url: "http://localhost:5174/"
+      });
   });
 
   it("renders segmented poster cells for the hero composition", () => {

@@ -1,5 +1,5 @@
 import { RouterLinkStub, flushPromises, mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import TopicDetailView from "./TopicDetailView.vue";
 
 vi.mock("vue-router", async () => {
@@ -21,6 +21,12 @@ vi.mock("../lib/api", () => ({
 }));
 
 describe("TopicDetailView", () => {
+  afterEach(() => {
+    document.head.querySelectorAll("meta[data-managed='site'], link[data-managed='site'], script[data-managed='site']")
+      .forEach((node) => node.remove());
+    document.title = "";
+  });
+
   it("renders topic related series and posts", async () => {
     const wrapper = mount(TopicDetailView, {
       global: { stubs: { RouterLink: RouterLinkStub } }
@@ -30,5 +36,14 @@ describe("TopicDetailView", () => {
     expect(wrapper.text()).toContain("Spring Boot");
     expect(wrapper.text()).toContain("Build Blog");
     expect(wrapper.text()).toContain("JWT Login");
+    expect(document.title).toBe("Spring Boot | 4946 Blog");
+    expect(document.querySelector("meta[name='description']")?.getAttribute("content")).toBe("Backend");
+    expect(JSON.parse(document.querySelector("script[type='application/ld+json'][data-managed='site']")?.textContent || "{}"))
+      .toMatchObject({
+        "@type": "CollectionPage",
+        name: "Spring Boot",
+        description: "Backend",
+        url: "http://localhost:5174/topics/spring-boot"
+      });
   });
 });

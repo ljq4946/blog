@@ -1,5 +1,5 @@
 import { RouterLinkStub, flushPromises, mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import SeriesDetailView from "./SeriesDetailView.vue";
 
 vi.mock("vue-router", async () => {
@@ -27,6 +27,12 @@ vi.mock("../lib/api", () => ({
 }));
 
 describe("SeriesDetailView", () => {
+  afterEach(() => {
+    document.head.querySelectorAll("meta[data-managed='site'], link[data-managed='site'], script[data-managed='site']")
+      .forEach((node) => node.remove());
+    document.title = "";
+  });
+
   it("renders ordered series posts", async () => {
     const wrapper = mount(SeriesDetailView, {
       global: { stubs: { RouterLink: RouterLinkStub } }
@@ -36,5 +42,14 @@ describe("SeriesDetailView", () => {
     expect(wrapper.text()).toContain("Build Blog");
     expect(wrapper.text()).toContain("Spring Boot");
     expect(wrapper.text()).toContain("JWT Login");
+    expect(document.title).toBe("Build Blog | 4946 Blog");
+    expect(document.querySelector("meta[name='description']")?.getAttribute("content")).toBe("Project");
+    expect(JSON.parse(document.querySelector("script[type='application/ld+json'][data-managed='site']")?.textContent || "{}"))
+      .toMatchObject({
+        "@type": "CollectionPage",
+        name: "Build Blog",
+        description: "Project",
+        url: "http://localhost:5174/series/build-blog"
+      });
   });
 });

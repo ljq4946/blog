@@ -21,10 +21,16 @@ import type { Series } from "@blog/shared";
 import { onMounted, ref } from "vue";
 import EmptyState from "../components/EmptyState.vue";
 import { publicApi } from "../lib/api";
+import { applySiteMetadata } from "../lib/siteMetadata";
 
 const series = ref<Series[]>([]);
 
 onMounted(async () => {
+  applySiteMetadata({
+    title: "Series",
+    description: "Read complete technical paths in order.",
+    path: "/series"
+  });
   try {
     series.value = await publicApi.seriesList();
   } catch {

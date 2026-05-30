@@ -5,6 +5,7 @@
 - Add flat topics for durable technical knowledge maps.
 - Add ordered series for sequential article reading paths.
 - Extend article editing, public archive filtering, and article detail pages with topic and series metadata.
+- Improve technical SEO with topic/series sitemap URLs, richer page metadata, Twitter cards, and JSON-LD structured data.
 
 ## 1.1.0 - 2026-05-26
 
