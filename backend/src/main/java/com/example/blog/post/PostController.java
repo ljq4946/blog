@@ -52,10 +52,12 @@ public class PostController {
       @RequestParam Optional<Integer> year,
       @RequestParam Optional<String> category,
       @RequestParam Optional<String> tag,
+      @RequestParam Optional<String> topic,
+      @RequestParam Optional<String> series,
       @RequestParam Optional<Integer> page,
       @RequestParam Optional<Integer> size,
       @RequestParam Optional<String> sort) {
-    return postService.search(new PostSearchRequest(keyword, year, category, tag, page, size, sort));
+    return postService.search(new PostSearchRequest(keyword, year, category, tag, topic, series, page, size, sort));
   }
 
   @GetMapping("/api/v1/posts/{slug}")

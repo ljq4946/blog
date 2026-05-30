@@ -4,8 +4,12 @@ import com.example.blog.category.Category;
 import com.example.blog.category.CategoryRepository;
 import com.example.blog.media.MediaAssetRepository;
 import com.example.blog.security.html.HtmlSanitizer;
+import com.example.blog.series.Series;
+import com.example.blog.series.SeriesRepository;
 import com.example.blog.tag.Tag;
 import com.example.blog.tag.TagRepository;
+import com.example.blog.topic.Topic;
+import com.example.blog.topic.TopicRepository;
 import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,14 +36,18 @@ public class PostService {
   private final PostRepository posts;
   private final CategoryRepository categories;
   private final TagRepository tags;
+  private final TopicRepository topics;
+  private final SeriesRepository series;
   private final MediaAssetRepository media;
   private final HtmlSanitizer sanitizer;
 
   public PostService(PostRepository posts, CategoryRepository categories, TagRepository tags,
-      MediaAssetRepository media, HtmlSanitizer sanitizer) {
+      TopicRepository topics, SeriesRepository series, MediaAssetRepository media, HtmlSanitizer sanitizer) {
     this.posts = posts;
     this.categories = categories;
     this.tags = tags;
+    this.topics = topics;
+    this.series = series;
     this.media = media;
     this.sanitizer = sanitizer;
   }
@@ -71,16 +79,18 @@ public class PostService {
         .and(keywordMatches(request.keyword()))
         .and(publishedInYear(request.year()))
         .and(categorySlugMatches(request.category()))
-        .and(tagSlugMatches(request.tag()));
+        .and(tagSlugMatches(request.tag()))
+        .and(topicSlugMatches(request.topic()))
+        .and(seriesSlugMatches(request.series()));
 
     return PageResponse.from(posts.findAll(spec, pageable), this::response);
   }
 
   @Transactional(readOnly = true)
   public PostResponse publicDetail(String slug) {
-    return posts.findBySlugAndStatus(slug, PostStatus.PUBLISHED)
-        .map(this::response)
+    Post post = posts.findBySlugAndStatus(slug, PostStatus.PUBLISHED)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    return responseWithSeriesNavigation(post);
   }
 
   @Transactional(readOnly = true)
@@ -183,6 +193,22 @@ public class PostService {
         .orElse(null);
   }
 
+  private Specification<Post> topicSlugMatches(Optional<String> topicSlug) {
+    return normalizedText(topicSlug)
+        .<Specification<Post>>map(slug -> (root, query, criteria) -> {
+          query.distinct(true);
+          return criteria.equal(root.join("topics", JoinType.INNER).get("slug"), slug);
+        })
+        .orElse(null);
+  }
+
+  private Specification<Post> seriesSlugMatches(Optional<String> seriesSlug) {
+    return normalizedText(seriesSlug)
+        .<Specification<Post>>map(slug -> (root, query, criteria) ->
+            criteria.equal(root.join("series", JoinType.INNER).get("slug"), slug))
+        .orElse(null);
+  }
+
   private void apply(Post post, PostRequest request) {
     post.setTitle(required(request.title(), "title"));
     post.setSlug(required(request.slug(), "slug"));
@@ -203,6 +229,29 @@ public class PostService {
       throw new IllegalArgumentException("Unknown tag");
     }
     post.setTags(new HashSet<>(selectedTags));
+
+    Set<Long> topicIds = request.topicIds() == null ? Set.of() : request.topicIds();
+    List<Topic> selectedTopics = topics.findAllById(topicIds);
+    if (selectedTopics.size() != topicIds.size()) {
+      throw new IllegalArgumentException("Unknown topic");
+    }
+    post.setTopics(new HashSet<>(selectedTopics));
+
+    if (request.seriesId() == null) {
+      if (request.seriesOrder() != null) {
+        throw new IllegalArgumentException("seriesOrder requires seriesId");
+      }
+      post.setSeries(null);
+      post.setSeriesOrder(null);
+    } else {
+      if (request.seriesOrder() == null || request.seriesOrder() < 1) {
+        throw new IllegalArgumentException("seriesOrder must be a positive number");
+      }
+      Series selectedSeries = series.findById(request.seriesId())
+          .orElseThrow(() -> new IllegalArgumentException("Unknown series"));
+      post.setSeries(selectedSeries);
+      post.setSeriesOrder(request.seriesOrder());
+    }
   }
 
   private String required(String value, String field) {
@@ -214,6 +263,23 @@ public class PostService {
 
   private PostResponse response(Post post) {
     return PostResponse.from(post, coverMediaUrl(post));
+  }
+
+  private PostResponse responseWithSeriesNavigation(Post post) {
+    SeriesPostSummary previous = null;
+    SeriesPostSummary next = null;
+    if (post.getSeries() != null && post.getSeriesOrder() != null) {
+      Long seriesId = post.getSeries().getId();
+      previous = posts.findFirstBySeriesIdAndStatusAndSeriesOrderLessThanOrderBySeriesOrderDesc(
+              seriesId, PostStatus.PUBLISHED, post.getSeriesOrder())
+          .map(SeriesPostSummary::from)
+          .orElse(null);
+      next = posts.findFirstBySeriesIdAndStatusAndSeriesOrderGreaterThanOrderBySeriesOrderAsc(
+              seriesId, PostStatus.PUBLISHED, post.getSeriesOrder())
+          .map(SeriesPostSummary::from)
+          .orElse(null);
+    }
+    return PostResponse.from(post, coverMediaUrl(post), previous, next);
   }
 
   private String coverMediaUrl(Post post) {

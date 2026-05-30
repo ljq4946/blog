@@ -28,6 +28,12 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
 
   boolean existsBySeriesId(Long seriesId);
 
+  Optional<Post> findFirstBySeriesIdAndStatusAndSeriesOrderLessThanOrderBySeriesOrderDesc(
+      Long seriesId, PostStatus status, Integer seriesOrder);
+
+  Optional<Post> findFirstBySeriesIdAndStatusAndSeriesOrderGreaterThanOrderBySeriesOrderAsc(
+      Long seriesId, PostStatus status, Integer seriesOrder);
+
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("update Post p set p.likeCount = p.likeCount + 1 where p.slug = :slug and p.status = :status")
   int incrementLikeCount(@Param("slug") String slug, @Param("status") PostStatus status);

@@ -6,8 +6,12 @@ import com.example.blog.category.CategoryRepository;
 import com.example.blog.post.Post;
 import com.example.blog.post.PostRepository;
 import com.example.blog.post.PostStatus;
+import com.example.blog.series.Series;
+import com.example.blog.series.SeriesRepository;
 import com.example.blog.tag.Tag;
 import com.example.blog.tag.TagRepository;
+import com.example.blog.topic.Topic;
+import com.example.blog.topic.TopicRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,15 +43,24 @@ class PostSearchControllerTest {
   CategoryRepository categories;
   @Autowired
   TagRepository tags;
+  @Autowired
+  TopicRepository topics;
+  @Autowired
+  SeriesRepository series;
 
   Category engineering;
   Category notes;
   Tag vue;
   Tag java;
+  Topic spring;
+  Topic security;
+  Series buildBlog;
 
   @BeforeEach
   void setUp() {
     posts.deleteAll();
+    series.deleteAll();
+    topics.deleteAll();
     tags.deleteAll();
     categories.deleteAll();
 
@@ -55,11 +68,18 @@ class PostSearchControllerTest {
     notes = categories.save(new Category("Notes", "notes", "", 1));
     vue = tags.save(new Tag("Vue", "vue"));
     java = tags.save(new Tag("Java", "java"));
+    spring = topics.save(new Topic("Spring Boot", "spring-boot", "Backend topic", 0));
+    security = topics.save(new Topic("Security", "security", "Security topic", 1));
+    buildBlog = series.save(new Series("Build Blog", "build-blog", "Project series", spring, 0));
 
     published("Vue Reading", "vue-reading", "Frontend summary", "<p>Composition API guide</p>",
         engineering, Set.of(vue), "2026-05-20T00:00:00Z");
-    published("Spring Search", "spring-search", "Backend summary", "<p>Criteria query guide</p>",
+    Post springPost = published("Spring Search", "spring-search", "Backend summary", "<p>Criteria query guide</p>",
         engineering, Set.of(java), "2025-04-10T00:00:00Z");
+    springPost.setTopics(Set.of(spring, security));
+    springPost.setSeries(buildBlog);
+    springPost.setSeriesOrder(1);
+    posts.save(springPost);
     published("Personal Note", "personal-note", "Notebook summary", "<p>Daily writing</p>",
         notes, Set.of(), "2026-01-02T00:00:00Z");
 
@@ -126,6 +146,21 @@ class PostSearchControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(1))
         .andExpect(jsonPath("$.content[0].title").value("Vue Reading"));
+  }
+
+  @Test
+  void filtersByTopicAndSeries() throws Exception {
+    mvc.perform(get("/api/v1/posts/search").param("topic", "spring-boot"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].slug").value("spring-search"))
+        .andExpect(jsonPath("$.content[0].topics[0].slug").value("security"))
+        .andExpect(jsonPath("$.content[0].series.slug").value("build-blog"));
+
+    mvc.perform(get("/api/v1/posts/search").param("series", "build-blog"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].seriesOrder").value(1));
   }
 
   @Test
