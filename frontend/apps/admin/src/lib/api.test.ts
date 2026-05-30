@@ -59,4 +59,35 @@ describe("adminApi comments", () => {
       ["/api/v1/admin/home-profile", "PUT"]
     ]);
   });
+
+  it("calls admin topic and series endpoints", async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      JSON.stringify([]),
+      { headers: { "Content-Type": "application/json" } }
+    ));
+    vi.stubGlobal("fetch", fetchMock);
+    const { adminApi } = await import("./api");
+
+    await adminApi.topics();
+    await adminApi.saveTopic({ name: "Spring Boot", slug: "spring-boot", description: "Backend", sortOrder: 0 });
+    await adminApi.deleteTopic(3);
+    await adminApi.series();
+    await adminApi.saveSeries({
+      name: "Build Blog",
+      slug: "build-blog",
+      description: "Project",
+      primaryTopicId: 3,
+      sortOrder: 0
+    });
+    await adminApi.deleteSeries(4);
+
+    expect(fetchMock.mock.calls.map((call) => [call[0], call[1]?.method ?? "GET"])).toEqual([
+      ["/api/v1/admin/topics", "GET"],
+      ["/api/v1/admin/topics", "POST"],
+      ["/api/v1/admin/topics/3", "DELETE"],
+      ["/api/v1/admin/series", "GET"],
+      ["/api/v1/admin/series", "POST"],
+      ["/api/v1/admin/series/4", "DELETE"]
+    ]);
+  });
 });

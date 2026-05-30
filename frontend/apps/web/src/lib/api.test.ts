@@ -79,4 +79,27 @@ describe("publicApi.searchPosts", () => {
       content: "Plain comment"
     }));
   });
+
+  it("calls public topic and series endpoints and includes search filters", async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      JSON.stringify({ content: [], number: 0, size: 10, totalElements: 0, totalPages: 0 }),
+      { headers: { "Content-Type": "application/json" } }
+    ));
+    vi.stubGlobal("fetch", fetchMock);
+    const { publicApi } = await import("./api");
+
+    await publicApi.topics();
+    await publicApi.topic("spring-boot");
+    await publicApi.seriesList();
+    await publicApi.series("build-blog");
+    await publicApi.searchPosts({ topic: "spring-boot", series: "build-blog", page: 0, size: 10 });
+
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual([
+      "/api/v1/topics",
+      "/api/v1/topics/spring-boot",
+      "/api/v1/series",
+      "/api/v1/series/build-blog",
+      "/api/v1/posts/search?topic=spring-boot&series=build-blog&page=0&size=10"
+    ]);
+  });
 });

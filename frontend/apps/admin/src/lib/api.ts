@@ -10,8 +10,12 @@ import {
   type PageResponse,
   type Post,
   type PostInput,
+  type Series,
+  type SeriesInput,
   type SitePage,
-  type Tag
+  type Tag,
+  type Topic,
+  type TopicInput
 } from "@blog/shared";
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
@@ -55,6 +59,26 @@ export const adminApi = {
   },
   deleteTag(id: number) {
     return api.delete(`/v1/admin/tags/${id}`);
+  },
+  topics() {
+    return api.get<Topic[]>("/v1/admin/topics");
+  },
+  saveTopic(topic: Partial<TopicInput> & { id?: number }) {
+    return topic.id ? api.put<Topic>(`/v1/admin/topics/${topic.id}`, topic) : api.post<Topic>("/v1/admin/topics", topic);
+  },
+  deleteTopic(id: number) {
+    return api.delete(`/v1/admin/topics/${id}`);
+  },
+  series() {
+    return api.get<Series[]>("/v1/admin/series");
+  },
+  saveSeries(series: Partial<SeriesInput> & { id?: number }) {
+    return series.id
+      ? api.put<Series>(`/v1/admin/series/${series.id}`, series)
+      : api.post<Series>("/v1/admin/series", series);
+  },
+  deleteSeries(id: number) {
+    return api.delete(`/v1/admin/series/${id}`);
   },
   media(page = 0) {
     return api.get<PageResponse<MediaAsset>>(`/v1/admin/media?page=${page}&size=24`);

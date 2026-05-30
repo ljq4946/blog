@@ -8,8 +8,12 @@ import {
   type PageResponse,
   type Post,
   type PublicComment,
+  type Series,
+  type SeriesDetail,
   type SitePage,
-  type Tag
+  type Tag,
+  type Topic,
+  type TopicDetail
 } from "@blog/shared";
 
 const api = new ApiClient({ baseUrl: import.meta.env.VITE_API_BASE_URL ?? "/api" });
@@ -19,6 +23,8 @@ export interface PostSearchParams {
   year?: string | number | null;
   category?: string | null;
   tag?: string | null;
+  topic?: string | null;
+  series?: string | null;
   page?: number | null;
   size?: number | null;
   sort?: string | null;
@@ -78,6 +84,18 @@ export const publicApi = {
   },
   tags() {
     return api.get<Tag[]>("/v1/tags");
+  },
+  topics() {
+    return api.get<Topic[]>("/v1/topics");
+  },
+  topic(slug: string) {
+    return api.get<TopicDetail>(`/v1/topics/${slug}`);
+  },
+  seriesList() {
+    return api.get<Series[]>("/v1/series");
+  },
+  series(slug: string) {
+    return api.get<SeriesDetail>(`/v1/series/${slug}`);
   },
   archive() {
     return api.get<ArchiveMonth[]>("/v1/archive");

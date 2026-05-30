@@ -14,6 +14,45 @@ export interface Tag {
   slug: string;
 }
 
+export interface Topic {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  sortOrder: number;
+}
+
+export interface TopicInput {
+  name: string;
+  slug: string;
+  description?: string | null;
+  sortOrder: number;
+}
+
+export interface Series {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  primaryTopic?: Pick<Topic, "id" | "name" | "slug"> | null;
+  sortOrder: number;
+}
+
+export interface SeriesInput {
+  name: string;
+  slug: string;
+  description?: string | null;
+  primaryTopicId?: number | null;
+  sortOrder: number;
+}
+
+export interface SeriesPostSummary {
+  id: number;
+  title: string;
+  slug: string;
+  seriesOrder?: number | null;
+}
+
 export interface Post {
   id: number;
   title: string;
@@ -24,6 +63,11 @@ export interface Post {
   coverMediaUrl?: string | null;
   status: PostStatus;
   category?: Pick<Category, "id" | "name" | "slug"> | null;
+  topics?: Array<Pick<Topic, "id" | "name" | "slug">>;
+  series?: Pick<Series, "id" | "name" | "slug" | "primaryTopic"> | null;
+  seriesOrder?: number | null;
+  previousSeriesPost?: SeriesPostSummary | null;
+  nextSeriesPost?: SeriesPostSummary | null;
   tags?: Array<Pick<Tag, "id" | "name" | "slug">>;
   createdAt?: string;
   updatedAt?: string;
@@ -38,8 +82,22 @@ export interface PostInput {
   coverMediaId?: number | null;
   status: PostStatus;
   categoryId?: number | null;
+  topicIds: number[];
+  seriesId?: number | null;
+  seriesOrder?: number | null;
   tagIds: number[];
   publishedAt?: string | null;
+}
+
+export interface TopicDetail {
+  topic: Topic;
+  relatedSeries: Series[];
+  posts: Post[];
+}
+
+export interface SeriesDetail {
+  series: Series;
+  posts: Post[];
 }
 
 export interface MediaAsset {
