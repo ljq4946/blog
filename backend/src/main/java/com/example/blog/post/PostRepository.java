@@ -12,13 +12,16 @@ import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificationExecutor<Post> {
 
-  @EntityGraph(attributePaths = {"category", "tags"})
+  @EntityGraph(attributePaths = {"category", "tags", "topics", "series", "series.primaryTopic"})
   List<Post> findByStatusOrderByPublishedAtDescCreatedAtDesc(PostStatus status);
 
-  @EntityGraph(attributePaths = {"category", "tags"})
+  @EntityGraph(attributePaths = {"category", "tags", "topics", "series", "series.primaryTopic"})
   Optional<Post> findBySlugAndStatus(String slug, PostStatus status);
 
   List<Post> findTop20ByStatusOrderByPublishedAtDescCreatedAtDesc(PostStatus status);
+
+  @EntityGraph(attributePaths = {"category", "tags", "topics", "series", "series.primaryTopic"})
+  List<Post> findByTopicsSlugAndStatusOrderByPublishedAtDescCreatedAtDesc(String slug, PostStatus status);
 
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("update Post p set p.likeCount = p.likeCount + 1 where p.slug = :slug and p.status = :status")
@@ -27,7 +30,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
   @Query("select p.likeCount from Post p where p.slug = :slug and p.status = :status")
   Optional<Long> findLikeCountBySlugAndStatus(@Param("slug") String slug, @Param("status") PostStatus status);
 
-  @EntityGraph(attributePaths = {"category", "tags"})
+  @EntityGraph(attributePaths = {"category", "tags", "topics", "series", "series.primaryTopic"})
   @Query("select p from Post p order by p.createdAt desc")
   List<Post> findAllForAdmin();
 }

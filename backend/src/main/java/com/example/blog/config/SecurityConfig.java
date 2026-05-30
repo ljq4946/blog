@@ -51,6 +51,8 @@ public class SecurityConfig {
                 "/api/v1/posts/**",
                 "/api/v1/categories",
                 "/api/v1/tags",
+                "/api/v1/topics",
+                "/api/v1/topics/**",
                 "/api/v1/archive",
                 "/api/v1/site-pages/about",
                 "/api/v1/home-profile").permitAll()
