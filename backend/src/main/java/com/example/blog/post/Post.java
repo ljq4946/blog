@@ -1,7 +1,9 @@
 package com.example.blog.post;
 
 import com.example.blog.category.Category;
+import com.example.blog.series.Series;
 import com.example.blog.tag.Tag;
+import com.example.blog.topic.Topic;
 import jakarta.persistence.*;
 
 import java.time.Instant;
@@ -45,6 +47,20 @@ public class Post {
       joinColumns = @JoinColumn(name = "post_id"),
       inverseJoinColumns = @JoinColumn(name = "tag_id"))
   private Set<Tag> tags = new HashSet<>();
+
+  @ManyToMany
+  @JoinTable(
+      name = "post_topics",
+      joinColumns = @JoinColumn(name = "post_id"),
+      inverseJoinColumns = @JoinColumn(name = "topic_id"))
+  private Set<Topic> topics = new HashSet<>();
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "series_id")
+  private Series series;
+
+  @Column(name = "series_order")
+  private Integer seriesOrder;
 
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
@@ -147,6 +163,30 @@ public class Post {
 
   public void setTags(Set<Tag> tags) {
     this.tags = new HashSet<>(tags);
+  }
+
+  public Set<Topic> getTopics() {
+    return topics;
+  }
+
+  public void setTopics(Set<Topic> topics) {
+    this.topics = new HashSet<>(topics);
+  }
+
+  public Series getSeries() {
+    return series;
+  }
+
+  public void setSeries(Series series) {
+    this.series = series;
+  }
+
+  public Integer getSeriesOrder() {
+    return seriesOrder;
+  }
+
+  public void setSeriesOrder(Integer seriesOrder) {
+    this.seriesOrder = seriesOrder;
   }
 
   public Instant getCreatedAt() {

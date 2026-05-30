@@ -41,7 +41,8 @@ class FlywayMigrationTest {
           }
 
           assertThat(tables).contains(
-              "users", "posts", "categories", "tags", "post_tags", "media_assets", "site_pages");
+              "users", "posts", "categories", "tags", "post_tags", "media_assets", "site_pages",
+              "topics", "post_topics", "series");
         });
   }
 
