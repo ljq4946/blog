@@ -106,6 +106,36 @@ describe("publishChecklist", () => {
   it("normalizes form input before submit", () => {
     expect(toPostInput({ title: "  Ready  ", slug: "ready", status: "DRAFT", tagIds: [] }).title).toBe("Ready");
   });
+
+  it("serializes topic and series fields for post submit", () => {
+    expect(toPostInput({
+      title: "Series post",
+      slug: "series-post",
+      contentHtml: "<p>Body</p>",
+      status: "PUBLISHED",
+      categoryId: null,
+      tagIds: [],
+      topicIds: [1, 2],
+      seriesId: 3,
+      seriesOrder: 4
+    })).toMatchObject({
+      topicIds: [1, 2],
+      seriesId: 3,
+      seriesOrder: 4
+    });
+  });
+
+  it("requires a positive series order when a series is selected", () => {
+    expect(validatePostForm({
+      title: "Series post",
+      slug: "series-post",
+      status: "PUBLISHED",
+      tagIds: [],
+      topicIds: [],
+      seriesId: 3,
+      seriesOrder: null
+    })).toContain("请选择系列序号");
+  });
 });
 
 describe("post recovery helpers", () => {

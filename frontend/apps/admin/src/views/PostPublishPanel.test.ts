@@ -1,8 +1,8 @@
 import { mount } from "@vue/test-utils";
-import ElementPlus, { ElSelect } from "element-plus";
+import ElementPlus, { ElInputNumber, ElSelect } from "element-plus";
 import { describe, expect, it } from "vitest";
 import PostPublishPanel from "./PostPublishPanel.vue";
-import type { Category, MediaAsset, Tag } from "@blog/shared";
+import type { Category, MediaAsset, Series, Tag, Topic } from "@blog/shared";
 import type { PostForm, PublishCheck } from "../features/posts/postForm";
 
 const form: PostForm = {
@@ -13,6 +13,9 @@ const form: PostForm = {
   coverMediaId: 7,
   status: "DRAFT",
   categoryId: 1,
+  topicIds: [3],
+  seriesId: 4,
+  seriesOrder: 1,
   tagIds: [2]
 };
 
@@ -23,6 +26,15 @@ const checks: PublishCheck[] = [
 ];
 
 const categories: Category[] = [{ id: 1, name: "随笔", slug: "notes", sortOrder: 0 }];
+const topics: Topic[] = [{ id: 3, name: "Spring Boot", slug: "spring-boot", sortOrder: 0 }];
+const series: Series[] = [{
+  id: 4,
+  name: "Build Blog",
+  slug: "build-blog",
+  description: "Project",
+  primaryTopic: { id: 3, name: "Spring Boot", slug: "spring-boot" },
+  sortOrder: 0
+}];
 const tags: Tag[] = [{ id: 2, name: "Vue", slug: "vue" }];
 const mediaAssets: MediaAsset[] = [
   {
@@ -42,6 +54,8 @@ function mountPanel(overrides: Partial<InstanceType<typeof PostPublishPanel>["$p
       form,
       checks,
       categories,
+      topics,
+      series,
       tags,
       mediaAssets,
       selectedCover: mediaAssets[0],
@@ -63,6 +77,8 @@ describe("PostPublishPanel", () => {
     expect(wrapper.text()).toContain("发布检查");
     expect(wrapper.text()).toContain("标题");
     expect(wrapper.text()).toContain("正文");
+    expect(wrapper.text()).toContain("专题");
+    expect(wrapper.text()).toContain("系列");
     expect(wrapper.text()).toContain("建议完善");
     expect(wrapper.find('[data-test="restore-recovery"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="discard-recovery"]').exists()).toBe(true);
@@ -87,11 +103,17 @@ describe("PostPublishPanel", () => {
 
     await slugInput.setValue("updated-title");
     await selects[0].vm.$emit("update:modelValue", "PUBLISHED");
-    await selects[3].vm.$emit("update:modelValue", [2, 3]);
+    await selects[3].vm.$emit("update:modelValue", [3]);
+    await selects[4].vm.$emit("update:modelValue", 4);
+    await wrapper.findComponent(ElInputNumber).vm.$emit("update:modelValue", 2);
+    await selects[5].vm.$emit("update:modelValue", [2, 3]);
 
     expect(wrapper.emitted("update:form")).toEqual([
       [{ ...form, slug: "updated-title" }],
       [{ ...form, status: "PUBLISHED" }],
+      [{ ...form, topicIds: [3] }],
+      [{ ...form, seriesId: 4 }],
+      [{ ...form, seriesOrder: 2 }],
       [{ ...form, tagIds: [2, 3] }]
     ]);
   });

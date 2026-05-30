@@ -79,6 +79,8 @@
           :form="form"
           :checks="publishChecks"
           :categories="categories"
+          :topics="topics"
+          :series="series"
           :tags="tags"
           :media-assets="mediaAssets"
           :selected-cover="selectedCover"
@@ -141,7 +143,7 @@
 </template>
 
 <script setup lang="ts">
-import { formatDate, slugify, type Category, type MediaAsset, type Post, type Tag } from "@blog/shared";
+import { formatDate, slugify, type Category, type MediaAsset, type Post, type Series, type Tag, type Topic } from "@blog/shared";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
@@ -180,6 +182,8 @@ const currentPostId = computed(() => routePostId.value ?? createdPostId.value);
 const isNew = computed(() => currentPostId.value === null);
 const categories = ref<Category[]>([]);
 const tags = ref<Tag[]>([]);
+const topics = ref<Topic[]>([]);
+const series = ref<Series[]>([]);
 const mediaAssets = ref<MediaAsset[]>([]);
 const errors = ref<string[]>([]);
 const saveError = ref("");
@@ -200,6 +204,9 @@ const form = reactive<PostForm>({
   coverMediaId: null,
   status: "DRAFT",
   categoryId: null,
+  topicIds: [],
+  seriesId: null,
+  seriesOrder: null,
   tagIds: []
 });
 const linkForm = reactive({
@@ -306,6 +313,9 @@ function assignFormSnapshot(nextForm: PostForm) {
     coverMediaId: nextForm.coverMediaId ?? null,
     status: nextForm.status ?? "DRAFT",
     categoryId: nextForm.categoryId ?? null,
+    topicIds: nextForm.topicIds ?? [],
+    seriesId: nextForm.seriesId ?? null,
+    seriesOrder: nextForm.seriesOrder ?? null,
     tagIds: nextForm.tagIds ?? [],
     publishedAt: nextForm.publishedAt ?? null
   });
@@ -395,6 +405,7 @@ async function save(status?: Post["status"]) {
   const recoveryKeyBeforeSave = recoveryKey.value;
   const submittedForm: PostForm = {
     ...form,
+    topicIds: [...form.topicIds],
     tagIds: [...form.tagIds],
     status: form.status ?? "DRAFT"
   };
@@ -634,9 +645,16 @@ onBeforeRouteLeave(() => confirmLeave());
 
 onMounted(async () => {
   window.addEventListener("beforeunload", handleBeforeUnload);
-  const [loadedCategories, loadedTags] = await Promise.all([adminApi.categories(), adminApi.tags()]);
+  const [loadedCategories, loadedTags, loadedTopics, loadedSeries] = await Promise.all([
+    adminApi.categories(),
+    adminApi.tags(),
+    adminApi.topics(),
+    adminApi.series()
+  ]);
   categories.value = loadedCategories;
   tags.value = loadedTags;
+  topics.value = loadedTopics;
+  series.value = loadedSeries;
 
   try {
     mediaAssets.value = (await adminApi.media()).content;
@@ -655,6 +673,9 @@ onMounted(async () => {
         coverMediaId: current.coverMediaId ?? null,
         status: current.status,
         categoryId: current.category?.id ?? null,
+        topicIds: current.topics?.map((topic) => topic.id) ?? [],
+        seriesId: current.series?.id ?? null,
+        seriesOrder: current.seriesOrder ?? null,
         tagIds: current.tags?.map((tag) => tag.id) ?? [],
         publishedAt: current.publishedAt ?? null
       });

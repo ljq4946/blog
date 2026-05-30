@@ -15,6 +15,8 @@ const updatePostMock = vi.hoisted(() => vi.fn());
 const postsMock = vi.hoisted(() => vi.fn());
 const categoriesMock = vi.hoisted(() => vi.fn());
 const tagsMock = vi.hoisted(() => vi.fn());
+const topicsMock = vi.hoisted(() => vi.fn());
+const seriesMock = vi.hoisted(() => vi.fn());
 const mediaMock = vi.hoisted(() => vi.fn());
 const now = Date.parse("2026-05-19T12:00:00Z");
 const editorState = vi.hoisted(() => ({
@@ -71,6 +73,8 @@ vi.mock("../lib/api", () => ({
     updatePost: updatePostMock,
     categories: categoriesMock,
     tags: tagsMock,
+    topics: topicsMock,
+    series: seriesMock,
     media: mediaMock
   }
 }));
@@ -133,6 +137,8 @@ describe("PostEditorView", () => {
     onBeforeRouteLeaveMock.mockReset();
     createPostMock.mockReset();
     updatePostMock.mockReset();
+    topicsMock.mockReset();
+    seriesMock.mockReset();
     editorState.selection.empty = true;
     editorState.selection.from = 0;
     editorState.selection.to = 0;
@@ -140,6 +146,14 @@ describe("PostEditorView", () => {
     postsMock.mockResolvedValue([]);
     categoriesMock.mockResolvedValue([{ id: 1, name: "Category", slug: "category", sortOrder: 0 }]);
     tagsMock.mockResolvedValue([{ id: 2, name: "Tag", slug: "tag" }]);
+    topicsMock.mockResolvedValue([{ id: 3, name: "Spring Boot", slug: "spring-boot", sortOrder: 0 }]);
+    seriesMock.mockResolvedValue([{
+      id: 4,
+      name: "Build Blog",
+      slug: "build-blog",
+      primaryTopic: { id: 3, name: "Spring Boot", slug: "spring-boot" },
+      sortOrder: 0
+    }]);
     mediaMock.mockResolvedValue({
       content: [
         {
@@ -186,6 +200,9 @@ describe("PostEditorView", () => {
           coverMediaId: null,
           status: "DRAFT",
           categoryId: null,
+          topicIds: [],
+          seriesId: null,
+          seriesOrder: null,
           tagIds: [],
           publishedAt: null
         }
@@ -219,6 +236,51 @@ describe("PostEditorView", () => {
     expect(wrapper.find(".publish-panel").exists()).toBe(true);
     expect(wrapper.text()).toContain("\u53d1\u5e03\u68c0\u67e5");
     expect(wrapper.text()).toContain("\u53d1\u5e03\u8bbe\u7f6e");
+  });
+
+  it("loads topics and series into the publish panel", async () => {
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    const publishPanel = wrapper.findComponent(PostPublishPanel);
+    expect(publishPanel.props("topics")).toEqual([{ id: 3, name: "Spring Boot", slug: "spring-boot", sortOrder: 0 }]);
+    expect(publishPanel.props("series")).toEqual([{
+      id: 4,
+      name: "Build Blog",
+      slug: "build-blog",
+      primaryTopic: { id: 3, name: "Spring Boot", slug: "spring-boot" },
+      sortOrder: 0
+    }]);
+  });
+
+  it("maps existing post topic and series fields into the form", async () => {
+    routeMock.params = { id: "5" };
+    postsMock.mockResolvedValue([
+      {
+        id: 5,
+        title: "Series title",
+        slug: "series-title",
+        summary: "Series summary",
+        contentHtml: "<p>Series body</p>",
+        coverMediaId: null,
+        status: "DRAFT",
+        category: null,
+        topics: [{ id: 3, name: "Spring Boot", slug: "spring-boot" }],
+        series: { id: 4, name: "Build Blog", slug: "build-blog", primaryTopic: { id: 3, name: "Spring Boot", slug: "spring-boot" } },
+        seriesOrder: 2,
+        tags: [],
+        updatedAt: new Date(now).toISOString(),
+        publishedAt: null
+      }
+    ]);
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    expect(wrapper.findComponent(PostPublishPanel).props("form")).toMatchObject({
+      topicIds: [3],
+      seriesId: 4,
+      seriesOrder: 2
+    });
   });
 
   it("stretches the editable textbox to the editor surface", async () => {

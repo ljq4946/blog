@@ -1,6 +1,6 @@
 import type { PostInput } from "@blog/shared";
 
-export type PostForm = Partial<PostInput> & { title?: string; slug?: string; tagIds: number[] };
+export type PostForm = Partial<PostInput> & { title?: string; slug?: string; tagIds: number[]; topicIds: number[] };
 
 export type PublishCheckLevel = "required" | "recommended";
 
@@ -27,6 +27,9 @@ export function validatePostForm(form: PostForm) {
   if (!form.status) {
     errors.push("请选择状态");
   }
+  if (form.seriesId !== null && form.seriesId !== undefined && (!form.seriesOrder || form.seriesOrder < 1)) {
+    errors.push("请选择系列序号");
+  }
   return errors;
 }
 
@@ -39,6 +42,9 @@ export function toPostInput(form: PostForm): PostInput {
     coverMediaId: form.coverMediaId ?? null,
     status: form.status ?? "DRAFT",
     categoryId: form.categoryId ?? null,
+    topicIds: form.topicIds ?? [],
+    seriesId: form.seriesId ?? null,
+    seriesOrder: form.seriesId === null || form.seriesId === undefined ? null : form.seriesOrder ?? null,
     tagIds: form.tagIds ?? [],
     publishedAt: form.publishedAt ?? null
   };
@@ -69,6 +75,9 @@ export function postFormSnapshot(form: PostForm) {
     coverMediaId: form.coverMediaId ?? null,
     status: form.status ?? "DRAFT",
     categoryId: form.categoryId ?? null,
+    topicIds: [...(form.topicIds ?? [])].sort((left, right) => left - right),
+    seriesId: form.seriesId ?? null,
+    seriesOrder: form.seriesId === null || form.seriesId === undefined ? null : form.seriesOrder ?? null,
     tagIds: [...(form.tagIds ?? [])].sort((left, right) => left - right),
     publishedAt: form.publishedAt ?? null
   });
@@ -95,6 +104,7 @@ export function postRecoverySnapshot(form: PostForm, updatedAt = Date.now()): Po
   return {
     form: toPostInput({
       ...form,
+      topicIds: [...(form.topicIds ?? [])].sort((left, right) => left - right),
       tagIds: [...(form.tagIds ?? [])].sort((left, right) => left - right)
     }),
     updatedAt

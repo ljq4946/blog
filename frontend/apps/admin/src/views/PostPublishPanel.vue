@@ -53,6 +53,26 @@
           </el-select>
         </el-form-item>
 
+        <el-form-item label="专题">
+          <el-select :model-value="form.topicIds" multiple placeholder="选择专题" @update:model-value="updateField('topicIds', $event)">
+            <el-option v-for="topic in topics" :key="topic.id" :label="topic.name" :value="topic.id" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="系列">
+          <el-select :model-value="form.seriesId" clearable placeholder="选择系列" @update:model-value="updateField('seriesId', $event)">
+            <el-option v-for="item in series" :key="item.id" :label="item.name" :value="item.id" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item v-if="form.seriesId" label="系列序号">
+          <el-input-number
+            :model-value="form.seriesOrder ?? 1"
+            :min="1"
+            @update:model-value="updateField('seriesOrder', $event ?? null)"
+          />
+        </el-form-item>
+
         <el-form-item label="标签">
           <el-select :model-value="form.tagIds" multiple placeholder="选择标签" @update:model-value="updateField('tagIds', $event)">
             <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id" />
@@ -64,13 +84,15 @@
 </template>
 
 <script setup lang="ts">
-import type { Category, MediaAsset, Tag } from "@blog/shared";
+import type { Category, MediaAsset, Series, Tag, Topic } from "@blog/shared";
 import type { PostForm, PublishCheck } from "../features/posts/postForm";
 
 const props = defineProps<{
   form: PostForm;
   checks: PublishCheck[];
   categories: Category[];
+  topics: Topic[];
+  series: Series[];
   tags: Tag[];
   mediaAssets: MediaAsset[];
   selectedCover: MediaAsset | null;
