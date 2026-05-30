@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0 - Unreleased
+
+- Add flat topics for durable technical knowledge maps.
+- Add ordered series for sequential article reading paths.
+- Extend article editing, public archive filtering, and article detail pages with topic and series metadata.
+
 ## 1.1.0 - 2026-05-26
 
 - 新增首页资料管理，支持音乐播放区块和个人介绍区块在管理端维护。

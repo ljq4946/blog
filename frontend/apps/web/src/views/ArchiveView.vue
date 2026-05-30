@@ -13,6 +13,8 @@
       :years="years"
       :categories="categories"
       :tags="tags"
+      :topics="topics"
+      :series="series"
       :taxonomy-available="taxonomyAvailable"
       @search="searchFromFilters"
       @reset="resetFilters"
@@ -31,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Category, PageResponse, Post, Tag } from "@blog/shared";
+import type { Category, PageResponse, Post, Series, Tag, Topic } from "@blog/shared";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ArchiveFilters from "../components/ArchiveFilters.vue";
@@ -47,14 +49,18 @@ type ArchiveFilterState = {
   year: string;
   category: string;
   tag: string;
+  topic: string;
+  series: string;
   sort: string;
 };
-type ArchiveFilterInput = Required<Pick<PostSearchParams, "keyword" | "year" | "category" | "tag" | "sort">>;
+type ArchiveFilterInput = Required<Pick<PostSearchParams, "keyword" | "year" | "category" | "tag" | "topic" | "series" | "sort">>;
 
 const route = useRoute();
 const router = useRouter();
 const categories = ref<Category[]>([]);
 const tags = ref<Tag[]>([]);
+const topics = ref<Topic[]>([]);
+const series = ref<Series[]>([]);
 const taxonomyAvailable = ref(true);
 const loadError = ref("");
 const pageData = ref<PageResponse<Post>>({
@@ -70,6 +76,8 @@ const filterState = reactive<ArchiveFilterState>({
   year: queryString(route.query.year),
   category: queryString(route.query.category),
   tag: queryString(route.query.tag),
+  topic: queryString(route.query.topic),
+  series: queryString(route.query.series),
   sort: queryString(route.query.sort) || DEFAULT_SORT
 });
 
@@ -101,6 +109,8 @@ function normalizeFilterState(filters: ArchiveFilterInput): ArchiveFilterState {
     year: queryString(filters.year).trim(),
     category: queryString(filters.category).trim(),
     tag: queryString(filters.tag).trim(),
+    topic: queryString(filters.topic).trim(),
+    series: queryString(filters.series).trim(),
     sort: queryString(filters.sort).trim() || DEFAULT_SORT
   };
 }
@@ -123,6 +133,12 @@ function activeParams(page = queryPage(route.query.page)): PostSearchParams {
   }
   if (filters.tag) {
     params.tag = filters.tag;
+  }
+  if (filters.topic) {
+    params.topic = filters.topic;
+  }
+  if (filters.series) {
+    params.series = filters.series;
   }
   return params;
 }
@@ -158,13 +174,22 @@ async function loadPosts(params: PostSearchParams) {
 
 async function loadTaxonomy() {
   try {
-    const [loadedCategories, loadedTags] = await Promise.all([publicApi.categories(), publicApi.tags()]);
+    const [loadedCategories, loadedTags, loadedTopics, loadedSeries] = await Promise.all([
+      publicApi.categories(),
+      publicApi.tags(),
+      publicApi.topics(),
+      publicApi.seriesList()
+    ]);
     categories.value = loadedCategories;
     tags.value = loadedTags;
+    topics.value = loadedTopics;
+    series.value = loadedSeries;
     taxonomyAvailable.value = true;
   } catch {
     categories.value = [];
     tags.value = [];
+    topics.value = [];
+    series.value = [];
     taxonomyAvailable.value = false;
   }
 }
@@ -177,7 +202,7 @@ async function searchFromFilters(nextFilters: ArchiveFilterInput) {
 }
 
 async function resetFilters() {
-  Object.assign(filterState, { keyword: "", year: "", category: "", tag: "", sort: DEFAULT_SORT });
+  Object.assign(filterState, { keyword: "", year: "", category: "", tag: "", topic: "", series: "", sort: DEFAULT_SORT });
   await router.replace({ query: {} });
   await loadPosts({ page: 0, size: PAGE_SIZE, sort: DEFAULT_SORT });
 }

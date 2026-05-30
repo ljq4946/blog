@@ -13,6 +13,13 @@ const posts: Post[] = [
     status: "PUBLISHED",
     publishedAt: "2026-05-20T00:00:00Z",
     category: { id: 1, name: "Engineering", slug: "engineering" },
+    topics: [{ id: 3, name: "Spring Boot", slug: "spring-boot" }],
+    series: {
+      id: 4,
+      name: "Build Blog",
+      slug: "build-blog",
+      primaryTopic: { id: 3, name: "Spring Boot", slug: "spring-boot" }
+    },
     tags: [{ id: 2, name: "Vue", slug: "vue" }]
   }
 ];
@@ -33,6 +40,8 @@ describe("ArchivePostList", () => {
     expect(wrapper.get("a[href='/posts/reader-upgrade']").exists()).toBe(true);
     expect(wrapper.text()).toContain("Better archive discovery.");
     expect(wrapper.text()).toContain("Engineering");
+    expect(wrapper.text()).toContain("Build Blog");
+    expect(wrapper.text()).toContain("Spring Boot");
     expect(wrapper.text()).toContain("#Vue");
   });
 

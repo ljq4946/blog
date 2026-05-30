@@ -736,6 +736,86 @@
   font-family: "Archivo Black", "Arial Black", sans-serif;
 }
 
+.knowledge-index,
+.knowledge-detail {
+  display: grid;
+  gap: 28px;
+}
+
+.knowledge-index .section-head,
+.knowledge-detail .section-head {
+  margin-bottom: 0;
+}
+
+.knowledge-index .section-head p,
+.knowledge-detail .section-head p {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 8px 0 0;
+}
+
+.knowledge-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.knowledge-card,
+.related-series a,
+.series-post-list li {
+  background: var(--paper-soft);
+  border: 2px solid var(--ink);
+  box-shadow: 5px 5px 0 rgba(17, 16, 13, 0.18);
+  color: var(--ink);
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.knowledge-card strong {
+  font-family: "Archivo Black", "Arial Black", sans-serif;
+  font-size: 20px;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.knowledge-card em {
+  color: var(--blue);
+  font-style: normal;
+  font-weight: 800;
+}
+
+.related-series {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.related-series h2 {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.series-post-list {
+  display: grid;
+  gap: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.series-post-list span {
+  color: var(--red);
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 900;
+}
+
+.series-post-list a {
+  font-family: "Archivo Black", "Arial Black", sans-serif;
+  font-size: 24px;
+  line-height: 1;
+}
+
 .article-wrap {
   max-width: 860px;
 }
@@ -1056,6 +1136,36 @@
   z-index: 10;
 }
 
+.series-navigation {
+  background: var(--paper-soft);
+  border: 2px solid var(--ink);
+  box-shadow: 6px 6px 0 rgba(17, 16, 13, 0.18);
+  display: grid;
+  gap: 12px;
+  margin: 28px 0 0;
+  max-width: 920px;
+  padding: 18px;
+}
+
+.series-navigation-title {
+  color: var(--red);
+  font-family: "Archivo Black", "Arial Black", sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.series-navigation div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.series-navigation div a {
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  font-weight: 900;
+  padding: 8px 10px;
+}
+
 .article-interactions {
   border-top: var(--line);
   display: grid;
@@ -1251,7 +1361,7 @@
   border: var(--line);
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(220px, 2fr) repeat(4, minmax(140px, 1fr)) auto;
+  grid-template-columns: minmax(220px, 2fr) repeat(6, minmax(120px, 1fr)) auto;
   min-width: 0;
   padding: 14px;
 }

@@ -25,6 +25,8 @@
 - `src/main/java/com/example/blog/auth/`: 登录、JWT、认证过滤器、管理员初始化和用户角色。
 - `src/main/java/com/example/blog/post/`: 文章实体、DTO、仓储、服务、管理 API、公开列表、搜索、详情和归档 API。
 - `src/main/java/com/example/blog/category/` 与 `tag/`: 分类和标签的公开读取与后台管理 API。
+- `src/main/java/com/example/blog/topic/`: 扁平专题、公开专题页数据和后台专题管理 API。
+- `src/main/java/com/example/blog/series/`: 有序阅读系列、可选主专题关联和系列公开/后台 API。
 - `src/main/java/com/example/blog/media/`: 媒体上传、分页列表、删除和上传目录配置。
 - `src/main/java/com/example/blog/homeprofile/`: 首页资料读取与后台维护接口。
 - `src/main/java/com/example/blog/sitepage/`: 关于页等站点单页内容。
@@ -49,6 +51,7 @@
 
 - 登录与当前用户校验。
 - 文章列表、新建、编辑、发布状态、摘要、分类、标签和封面/引用媒体管理。
+- 专题与系列管理，并支持在文章发布面板中维护专题归属、系列归属和系列顺序。
 - 分类、标签、媒体库、评论、关于页和首页资料管理。
 - 通过 `src/lib/api.ts` 调用 `/api/v1/admin/...` 与 `/api/v1/auth/...`。
 
@@ -61,6 +64,7 @@
 主要职责:
 
 - 首页文章流、首页音乐/个人介绍区块、文章详情、分类页、标签页、归档发现页和关于页。
+- 专题和系列索引/详情页，用于长期技术知识地图和顺序阅读路径。
 - 文章目录、阅读偏好、阅读进度、代码高亮、评论和点赞交互。
 - 通过 `src/lib/api.ts` 调用公开 API，例如 `/api/v1/posts`、`/api/v1/archive`、`/api/v1/categories`、`/api/v1/tags` 等。
 

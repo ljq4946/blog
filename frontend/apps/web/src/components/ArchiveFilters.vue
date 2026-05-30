@@ -29,6 +29,22 @@
       </select>
     </label>
 
+    <label v-if="taxonomyAvailable" for="archive-topic">
+      <span>专题</span>
+      <select id="archive-topic" v-model="draft.topic">
+        <option value="">全部专题</option>
+        <option v-for="topic in topics" :key="topic.id" :value="topic.slug">{{ topic.name }}</option>
+      </select>
+    </label>
+
+    <label v-if="taxonomyAvailable" for="archive-series">
+      <span>系列</span>
+      <select id="archive-series" v-model="draft.series">
+        <option value="">全部系列</option>
+        <option v-for="item in series" :key="item.id" :value="item.slug">{{ item.name }}</option>
+      </select>
+    </label>
+
     <label for="archive-sort">
       <span>排序</span>
       <select id="archive-sort" v-model="draft.sort">
@@ -47,17 +63,19 @@
 </template>
 
 <script setup lang="ts">
-import type { Category, Tag } from "@blog/shared";
+import type { Category, Series, Tag, Topic } from "@blog/shared";
 import { reactive, watch } from "vue";
 import type { PostSearchParams } from "../lib/api";
 
-type ArchiveFilterState = Required<Pick<PostSearchParams, "keyword" | "year" | "category" | "tag" | "sort">>;
+type ArchiveFilterState = Required<Pick<PostSearchParams, "keyword" | "year" | "category" | "tag" | "topic" | "series" | "sort">>;
 
 const props = defineProps<{
   filters: ArchiveFilterState;
   years: string[];
   categories: Category[];
   tags: Tag[];
+  topics: Topic[];
+  series: Series[];
   taxonomyAvailable: boolean;
 }>();
 

@@ -39,6 +39,16 @@ const post: Post = {
   status: "PUBLISHED",
   publishedAt: "2026-05-20T00:00:00Z",
   category: { id: 1, name: "Engineering", slug: "engineering" },
+  topics: [{ id: 3, name: "Spring Boot", slug: "spring-boot" }],
+  series: {
+    id: 4,
+    name: "Build Blog",
+    slug: "build-blog",
+    primaryTopic: { id: 3, name: "Spring Boot", slug: "spring-boot" }
+  },
+  seriesOrder: 2,
+  previousSeriesPost: { id: 10, title: "Part One", slug: "part-one", seriesOrder: 1 },
+  nextSeriesPost: { id: 12, title: "Part Three", slug: "part-three", seriesOrder: 3 },
   tags: [{ id: 2, name: "Vue", slug: "vue" }]
 };
 
@@ -79,6 +89,10 @@ describe("PostDetailView", () => {
     expect(wrapper.text()).toContain("Reader Upgrade");
     expect(wrapper.text()).toContain("A better long-form reading page.");
     expect(wrapper.text()).toContain("Engineering");
+    expect(wrapper.text()).toContain("Spring Boot");
+    expect(wrapper.text()).toContain("Build Blog");
+    expect(wrapper.text()).toContain("Part One");
+    expect(wrapper.text()).toContain("Part Three");
     expect(wrapper.text()).toContain("#Vue");
     expect(wrapper.get(".article-hero-cover").attributes("src")).toBe("/uploads/cover.png");
     expect(wrapper.text()).toContain("Setup Guide");

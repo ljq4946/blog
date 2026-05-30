@@ -12,6 +12,8 @@
         <div class="archive-post-meta">
           <RouterLink v-if="post.category" :to="`/categories/${post.category.slug}`">{{ post.category.name }}</RouterLink>
           <span v-else>未分类</span>
+          <RouterLink v-if="post.series" :to="`/series/${post.series.slug}`">{{ post.series.name }}</RouterLink>
+          <RouterLink v-for="topic in post.topics ?? []" :key="topic.id" :to="`/topics/${topic.slug}`">{{ topic.name }}</RouterLink>
           <template v-if="post.tags?.length">
             <RouterLink v-for="tag in post.tags" :key="tag.id" :to="`/tags/${tag.slug}`">#{{ tag.name }}</RouterLink>
           </template>

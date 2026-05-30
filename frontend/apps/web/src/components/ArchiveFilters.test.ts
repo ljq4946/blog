@@ -1,10 +1,19 @@
 import { mount } from "@vue/test-utils";
-import type { Category, Tag } from "@blog/shared";
+import type { Category, Series, Tag, Topic } from "@blog/shared";
 import { describe, expect, it } from "vitest";
 import ArchiveFilters from "./ArchiveFilters.vue";
 
 const categories: Category[] = [{ id: 1, name: "Engineering", slug: "engineering", sortOrder: 0 }];
 const tags: Tag[] = [{ id: 2, name: "Vue", slug: "vue" }];
+const topics: Topic[] = [{ id: 3, name: "Spring Boot", slug: "spring-boot", sortOrder: 0 }];
+const series: Series[] = [{
+  id: 4,
+  name: "Build Blog",
+  slug: "build-blog",
+  description: "Project",
+  primaryTopic: null,
+  sortOrder: 0
+}];
 
 function mountFilters() {
   return mount(ArchiveFilters, {
@@ -14,11 +23,15 @@ function mountFilters() {
         year: "2026",
         category: "engineering",
         tag: "vue",
+        topic: "spring-boot",
+        series: "build-blog",
         sort: "publishedAt,desc"
       },
       years: ["2026", "2025"],
       categories,
       tags,
+      topics,
+      series,
       taxonomyAvailable: true
     }
   });
@@ -34,7 +47,12 @@ describe("ArchiveFilters", () => {
     await wrapper.get("#archive-keyword").setValue("spring");
     await wrapper.get("form").trigger("submit");
 
-    expect(wrapper.emitted("search")?.[0]?.[0]).toMatchObject({ keyword: "spring", year: "2026" });
+    expect(wrapper.emitted("search")?.[0]?.[0]).toMatchObject({
+      keyword: "spring",
+      year: "2026",
+      topic: "spring-boot",
+      series: "build-blog"
+    });
   });
 
   it("emits reset from the reset button", async () => {
@@ -48,15 +66,19 @@ describe("ArchiveFilters", () => {
   it("hides taxonomy selects when taxonomy options are unavailable", () => {
     const wrapper = mount(ArchiveFilters, {
       props: {
-        filters: { keyword: "", year: "", category: "", tag: "", sort: "publishedAt,desc" },
+        filters: { keyword: "", year: "", category: "", tag: "", topic: "", series: "", sort: "publishedAt,desc" },
         years: [],
         categories: [],
         tags: [],
+        topics: [],
+        series: [],
         taxonomyAvailable: false
       }
     });
 
     expect(wrapper.find("#archive-category").exists()).toBe(false);
     expect(wrapper.find("#archive-tag").exists()).toBe(false);
+    expect(wrapper.find("#archive-topic").exists()).toBe(false);
+    expect(wrapper.find("#archive-series").exists()).toBe(false);
   });
 });

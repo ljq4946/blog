@@ -6,6 +6,7 @@
       <p class="kicker">{{ formatDate(post.publishedAt) }}</p>
       <div class="article-taxonomy">
         <RouterLink v-if="post.category" :to="`/categories/${post.category.slug}`">{{ post.category.name }}</RouterLink>
+        <RouterLink v-for="topic in post.topics ?? []" :key="topic.id" :to="`/topics/${topic.slug}`">{{ topic.name }}</RouterLink>
         <span v-for="tag in post.tags ?? []" :key="tag.id">#{{ tag.name }}</span>
       </div>
       <h1>{{ post.title }}</h1>
@@ -20,6 +21,20 @@
         <ArticleToc :items="tocItems" :active-id="activeHeadingId" @navigate="navigateToHeading" />
       </aside>
     </div>
+
+    <nav v-if="post.series" class="series-navigation" aria-label="系列导航">
+      <RouterLink class="series-navigation-title" :to="`/series/${post.series.slug}`">
+        {{ post.series.name }} / {{ post.seriesOrder }}
+      </RouterLink>
+      <div>
+        <RouterLink v-if="post.previousSeriesPost" :to="`/posts/${post.previousSeriesPost.slug}`">
+          上一篇：{{ post.previousSeriesPost.title }}
+        </RouterLink>
+        <RouterLink v-if="post.nextSeriesPost" :to="`/posts/${post.nextSeriesPost.slug}`">
+          下一篇：{{ post.nextSeriesPost.title }}
+        </RouterLink>
+      </div>
+    </nav>
 
     <section class="article-interactions" aria-label="文章互动">
       <div class="like-panel">

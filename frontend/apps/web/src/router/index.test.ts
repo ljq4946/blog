@@ -8,4 +8,13 @@ describe("web router", () => {
     expect(paths).not.toContain("/posts");
     expect(paths).toContain("/posts/:slug");
   });
+
+  it("includes topic and series routes", () => {
+    expect(router.getRoutes().map((route) => route.path)).toEqual(expect.arrayContaining([
+      "/topics",
+      "/topics/:slug",
+      "/series",
+      "/series/:slug"
+    ]));
+  });
 });

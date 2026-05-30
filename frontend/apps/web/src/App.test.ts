@@ -31,6 +31,8 @@ describe("App", () => {
     });
 
     expect(wrapper.find(".masthead nav a[href='/posts']").exists()).toBe(false);
+    expect(wrapper.find(".masthead nav a[href='/topics']").exists()).toBe(true);
+    expect(wrapper.find(".masthead nav a[href='/series']").exists()).toBe(true);
     expect(wrapper.get(".masthead nav a[href='/archive']").text()).toBe("全部文章");
     expect(wrapper.get(".masthead nav").text()).not.toContain("归档");
     expect(wrapper.find(".masthead nav a[href='/about']").exists()).toBe(true);
