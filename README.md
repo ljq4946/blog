@@ -1,22 +1,22 @@
 # Modular Blog
 
-1.1 版本的模块化博客系统，包含 Java 21 Spring Boot 后端、Vue 3 管理后台、Vue 3 前台站点、共享 TypeScript API/DTO 包，以及 Docker Compose + Nginx 部署入口。
+1.2 版本的模块化博客系统，包含 Java 21 Spring Boot 后端、Vue 3 管理后台、Vue 3 前台站点、共享 TypeScript API/DTO 包，以及 Docker Compose + Nginx 部署入口。
 
-项目结构说明见 [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)，1.1 发布检查见 [docs/RELEASE_1_1_CHECKLIST.md](docs/RELEASE_1_1_CHECKLIST.md)，1.0 历史检查单保留在 [docs/RELEASE_1_0_CHECKLIST.md](docs/RELEASE_1_0_CHECKLIST.md)。
+项目结构说明见 [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)，1.2 发布检查见 [docs/RELEASE_1_2_CHECKLIST.md](docs/RELEASE_1_2_CHECKLIST.md)，1.1 和 1.0 历史检查单保留在 `docs/` 中。
 
-## 1.1 更新内容
+## 1.2 更新内容
 
-- 首页新增可配置的音乐播放与个人介绍模块，管理端可直接维护首页资料。
-- 前台新增归档发现页与搜索能力，支持按关键词、分类、标签和年月筛选文章。
-- 文章阅读体验增强，补充目录、阅读进度、回到顶部、代码块交互与更完整的富文本展示。
-- 管理端文章编辑器增强，支持封面预览、引用媒体插入、草稿恢复与更稳定的排版预览。
-- 前台首页视觉与海报布局完成第二轮调整，适配近期内容展示。
+- 新增扁平专题，用于组织长期技术知识地图，并提供公开专题索引和详情页。
+- 新增有序系列，用于承载顺序阅读路径，并在文章详情页展示系列上下文。
+- 管理端文章编辑、发布面板和内容结构维护支持专题与系列归属。
+- 前台归档、文章卡片和文章详情展示专题、系列、分类、标签的组合关系。
+- 技术 SEO 增强，补充专题/系列 sitemap URL、页面 metadata、Twitter card 和 JSON-LD 结构化数据。
 
 ## 项目结构速览
 
-- `backend/`: Spring Boot API 服务，负责认证、文章、分类、标签、媒体、评论、点赞、站点单页、RSS、Sitemap 和健康检查。
-- `frontend/apps/admin/`: 管理后台，提供登录、文章编辑、分类标签、媒体、评论、关于页和首页资料管理。
-- `frontend/apps/web/`: 前台阅读站点，提供首页、文章详情、归档发现、分类、标签、关于页和互动入口。
+- `backend/`: Spring Boot API 服务，负责认证、文章、分类、标签、专题、系列、媒体、评论、点赞、站点单页、RSS、Sitemap 和健康检查。
+- `frontend/apps/admin/`: 管理后台，提供登录、文章编辑、分类标签、专题系列、媒体、评论、关于页和首页资料管理。
+- `frontend/apps/web/`: 前台阅读站点，提供首页、文章详情、归档发现、分类、标签、专题、系列、关于页和互动入口。
 - `frontend/packages/shared/`: 前后端共享的 DTO、API 客户端、Token 存储等代码。
 - `deploy/`: Docker Compose、Nginx 路由和环境变量模板。
 - `scripts/`: Windows 本地开发启动脚本。
@@ -58,9 +58,9 @@ corepack pnpm test
 corepack pnpm build
 ```
 
-## 1.1 发布前检查
+## 1.2 发布前检查
 
-每次部署 1.1 前至少执行:
+每次部署 1.2 前至少执行:
 
 ```powershell
 git status --short --branch
@@ -112,7 +112,7 @@ docker compose up -d --build
 - `CORS_ALLOWED_ORIGINS`: 设置为公开域名，不要在生产环境使用 `*`。
 - `MYSQL_*`: 使用生产数据库凭据，并备份 MySQL volume。
 
-栈启动后运行 E2E:
+完整生产风格栈启动后，可选运行 E2E:
 
 ```powershell
 cd frontend

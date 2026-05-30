@@ -1,11 +1,12 @@
 # Changelog
 
-## 1.2.0 - Unreleased
+## 1.2.0 - 2026-05-30
 
 - Add flat topics for durable technical knowledge maps.
 - Add ordered series for sequential article reading paths.
 - Extend article editing, public archive filtering, and article detail pages with topic and series metadata.
 - Improve technical SEO with topic/series sitemap URLs, richer page metadata, Twitter cards, and JSON-LD structured data.
+- Raise backend, admin, web, and shared package versions to `1.2.0`.
 
 ## 1.1.0 - 2026-05-26
 

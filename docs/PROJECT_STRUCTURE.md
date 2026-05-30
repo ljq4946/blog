@@ -1,6 +1,6 @@
 # Project Structure
 
-本文档说明当前仓库的模块边界、运行入口和维护约定。1.1 发布前检查清单见 [RELEASE_1_1_CHECKLIST.md](RELEASE_1_1_CHECKLIST.md)，1.0 历史检查单见 [RELEASE_1_0_CHECKLIST.md](RELEASE_1_0_CHECKLIST.md)。
+本文档说明当前仓库的模块边界、运行入口和维护约定。1.2 发布前检查清单见 [RELEASE_1_2_CHECKLIST.md](RELEASE_1_2_CHECKLIST.md)，1.1 和 1.0 历史检查单保留在本目录中。
 
 ## 顶层目录
 
@@ -37,7 +37,7 @@
 - `src/main/resources/db/migration/`: Flyway 数据库迁移。
 - `src/test/java/com/example/blog/`: 后端单元和集成测试。
 
-当前后端 Maven 版本为 `1.1.0`。
+当前后端 Maven 版本为 `1.2.0`。
 
 ## 前端: `frontend/`
 
@@ -55,7 +55,7 @@
 - 分类、标签、媒体库、评论、关于页和首页资料管理。
 - 通过 `src/lib/api.ts` 调用 `/api/v1/admin/...` 与 `/api/v1/auth/...`。
 
-当前包版本为 `1.1.0`。
+当前包版本为 `1.2.0`。
 
 ### `frontend/apps/web/`
 
@@ -68,7 +68,7 @@
 - 文章目录、阅读偏好、阅读进度、代码高亮、评论和点赞交互。
 - 通过 `src/lib/api.ts` 调用公开 API，例如 `/api/v1/posts`、`/api/v1/archive`、`/api/v1/categories`、`/api/v1/tags` 等。
 
-当前包版本为 `1.1.0`。
+当前包版本为 `1.2.0`。
 
 ### `frontend/packages/shared/`
 
@@ -79,7 +79,7 @@
 - Token 存储和认证辅助逻辑。
 - 可被 `@blog/admin` 和 `@blog/web` 通过 workspace 依赖复用。
 
-当前包版本为 `1.1.0`。
+当前包版本为 `1.2.0`。
 
 ### 共享样式
 
@@ -91,7 +91,7 @@
 - `nginx.conf`: 统一入口路由，转发 `/api/`、`/uploads/`、发现文件、健康检查、`/admin/` 和前台页面。
 - `.env.example`: 生产风格环境变量模板，复制为 `.env` 后再修改密钥、域名和数据库密码。
 
-后端镜像使用 Maven 构建 `1.1.0` jar，并在 Dockerfile 中使用 `target/*.jar` 复制产物，避免后续版本号变更导致镜像构建失败。前端 Docker build context 由 `frontend/.dockerignore` 排除依赖目录、构建产物、缓存、日志、覆盖率和本地环境文件。
+后端镜像使用 Maven 构建 `1.2.0` jar，并在 Dockerfile 中使用 `target/*.jar` 复制产物，避免后续版本号变更导致镜像构建失败。前端 Docker build context 由 `frontend/.dockerignore` 排除依赖目录、构建产物、缓存、日志、覆盖率和本地环境文件。
 
 ## 脚本: `scripts/`
 
