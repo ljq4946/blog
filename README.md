@@ -1,8 +1,15 @@
 # Modular Blog
 
-1.6 版本的模块化博客系统，包含 Java 21 Spring Boot 后端、Vue 3 管理后台、Vue 3 前台站点、共享 TypeScript API/DTO 包，以及 Docker Compose + Nginx 部署入口。
+2.0 版本的模块化博客与个人知识沉淀系统，包含 Java 21 Spring Boot 后端、Vue 3 管理后台、Vue 3 前台站点、共享 TypeScript API/DTO 包，以及 Docker Compose + Nginx 部署入口。
 
-项目结构说明见 [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)，1.6 发布检查见 [docs/RELEASE_1_6_CHECKLIST.md](docs/RELEASE_1_6_CHECKLIST.md)，1.5、1.4、1.3、1.2、1.1 和 1.0 历史检查单保留在 `docs/` 中。
+项目结构说明见 [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)，2.0 发布检查见 [docs/RELEASE_2_0_CHECKLIST.md](docs/RELEASE_2_0_CHECKLIST.md)，1.6、1.5、1.4、1.3、1.2、1.1 和 1.0 历史检查单保留在 `docs/` 中。
+
+## 2.0 更新内容
+
+- 文章体系新增 `PUBLIC`/`PRIVATE` 可见性和 `ARTICLE`/`NOTE` 内容类型，既能公开发布，也能沉淀私有笔记。
+- 管理后台新增知识库入口，支持快速记录私有笔记、搜索知识项、把笔记转成公开文章草稿。
+- 后端新增知识搜索、内容关系、笔记转换和 JSON 备份导出接口；公开 API、RSS、Sitemap 和前台页面继续只暴露公开已发布文章。
+- 后端、管理后台、前台和共享包版本统一提升到 `2.0.0`。
 
 ## 1.6 更新内容
 
@@ -33,8 +40,8 @@
 
 ## 项目结构速览
 
-- `backend/`: Spring Boot API 服务，负责认证、文章、分类、标签、专题、系列、媒体、评论、点赞、轻量统计、站点单页、RSS、Sitemap 和健康检查。
-- `frontend/apps/admin/`: 管理后台，提供登录、文章编辑、分类标签、专题系列、媒体、评论、关于页和首页资料管理。
+- `backend/`: Spring Boot API 服务，负责认证、文章/笔记、知识关系、分类、标签、专题、系列、媒体、评论、点赞、轻量统计、站点单页、RSS、Sitemap 和健康检查。
+- `frontend/apps/admin/`: 管理后台，提供登录、知识库、文章编辑、分类标签、专题系列、媒体、评论、关于页和首页资料管理。
 - `frontend/apps/web/`: 前台阅读站点，提供首页内容发现、文章详情、归档发现、分类、标签、专题、系列、关于页和互动入口。
 - `frontend/packages/shared/`: 前后端共享的 DTO、API 客户端、Token 存储等代码。
 - `deploy/`: Docker Compose、Nginx 路由和环境变量模板。
@@ -77,9 +84,9 @@ corepack pnpm test
 corepack pnpm build
 ```
 
-## 1.6 发布前检查
+## 2.0 发布前检查
 
-每次部署 1.6 前至少执行:
+每次部署 2.0 前至少执行:
 
 ```powershell
 git status --short --branch

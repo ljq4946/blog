@@ -18,7 +18,9 @@ const form: PostForm = {
   topicIds: [3],
   seriesId: 4,
   seriesOrder: 1,
-  tagIds: [2]
+  tagIds: [2],
+  visibility: "PUBLIC",
+  contentType: "ARTICLE"
 };
 
 const checks: PublishCheck[] = [
@@ -111,11 +113,13 @@ describe("PostPublishPanel", () => {
     await wrapper.find('[data-test="seo-description"]').setValue("Updated SEO description");
     await selects[0].vm.$emit("update:modelValue", "PUBLISHED");
     await selects[0].vm.$emit("update:modelValue", "SCHEDULED");
+    await selects[1].vm.$emit("update:modelValue", "PRIVATE");
+    await selects[2].vm.$emit("update:modelValue", "NOTE");
     await datePickers[0].vm.$emit("update:modelValue", "2026-06-01T08:00:00Z");
-    await selects[3].vm.$emit("update:modelValue", [3]);
-    await selects[4].vm.$emit("update:modelValue", 4);
+    await selects[5].vm.$emit("update:modelValue", [3]);
+    await selects[6].vm.$emit("update:modelValue", 4);
     await wrapper.findComponent(ElInputNumber).vm.$emit("update:modelValue", 2);
-    await selects[5].vm.$emit("update:modelValue", [2, 3]);
+    await selects[7].vm.$emit("update:modelValue", [2, 3]);
 
     expect(wrapper.emitted("update:form")).toEqual([
       [{ ...form, slug: "updated-title" }],
@@ -123,6 +127,8 @@ describe("PostPublishPanel", () => {
       [{ ...form, seoDescription: "Updated SEO description" }],
       [{ ...form, status: "PUBLISHED" }],
       [{ ...form, status: "SCHEDULED" }],
+      [{ ...form, visibility: "PRIVATE" }],
+      [{ ...form, contentType: "NOTE" }],
       [{ ...form, publishedAt: "2026-06-01T08:00:00Z" }],
       [{ ...form, topicIds: [3] }],
       [{ ...form, seriesId: 4 }],

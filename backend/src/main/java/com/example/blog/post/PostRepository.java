@@ -20,8 +20,10 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
   @EntityGraph(attributePaths = {"category", "tags", "topics", "series", "series.primaryTopic"})
   @Query("""
       select p from Post p
-      where p.status = com.example.blog.post.PostStatus.PUBLISHED
-         or (p.status = com.example.blog.post.PostStatus.SCHEDULED and p.publishedAt <= :now)
+      where p.visibility = com.example.blog.post.PostVisibility.PUBLIC
+        and p.contentType = com.example.blog.post.PostContentType.ARTICLE
+        and (p.status = com.example.blog.post.PostStatus.PUBLISHED
+         or (p.status = com.example.blog.post.PostStatus.SCHEDULED and p.publishedAt <= :now))
       order by p.publishedAt desc, p.createdAt desc
       """)
   List<Post> findVisibleOrderByPublishedAtDescCreatedAtDesc(@Param("now") Instant now);
@@ -33,17 +35,22 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
   @Query("""
       select p from Post p
       where p.slug = :slug
+        and p.visibility = com.example.blog.post.PostVisibility.PUBLIC
+        and p.contentType = com.example.blog.post.PostContentType.ARTICLE
         and (p.status = com.example.blog.post.PostStatus.PUBLISHED
           or (p.status = com.example.blog.post.PostStatus.SCHEDULED and p.publishedAt <= :now))
       """)
   Optional<Post> findVisibleBySlug(@Param("slug") String slug, @Param("now") Instant now);
 
   List<Post> findTop20ByStatusOrderByPublishedAtDescCreatedAtDesc(PostStatus status);
+  boolean existsBySlug(String slug);
 
   @Query("""
       select p from Post p
-      where p.status = com.example.blog.post.PostStatus.PUBLISHED
-         or (p.status = com.example.blog.post.PostStatus.SCHEDULED and p.publishedAt <= :now)
+      where p.visibility = com.example.blog.post.PostVisibility.PUBLIC
+        and p.contentType = com.example.blog.post.PostContentType.ARTICLE
+        and (p.status = com.example.blog.post.PostStatus.PUBLISHED
+         or (p.status = com.example.blog.post.PostStatus.SCHEDULED and p.publishedAt <= :now))
       order by p.publishedAt desc, p.createdAt desc
       """)
   List<Post> findVisibleForFeed(@Param("now") Instant now, Pageable pageable);
@@ -55,6 +62,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
   @Query("""
       select distinct p from Post p join p.topics t
       where t.slug = :slug
+        and p.visibility = com.example.blog.post.PostVisibility.PUBLIC
+        and p.contentType = com.example.blog.post.PostContentType.ARTICLE
         and (p.status = com.example.blog.post.PostStatus.PUBLISHED
           or (p.status = com.example.blog.post.PostStatus.SCHEDULED and p.publishedAt <= :now))
       order by p.publishedAt desc, p.createdAt desc
@@ -70,6 +79,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
   @Query("""
       select p from Post p join p.series s
       where s.slug = :slug
+        and p.visibility = com.example.blog.post.PostVisibility.PUBLIC
+        and p.contentType = com.example.blog.post.PostContentType.ARTICLE
         and (p.status = com.example.blog.post.PostStatus.PUBLISHED
           or (p.status = com.example.blog.post.PostStatus.SCHEDULED and p.publishedAt <= :now))
       order by p.seriesOrder asc
@@ -88,6 +99,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
       select p from Post p
       where p.series.id = :seriesId
         and p.seriesOrder < :seriesOrder
+        and p.visibility = com.example.blog.post.PostVisibility.PUBLIC
+        and p.contentType = com.example.blog.post.PostContentType.ARTICLE
         and (p.status = com.example.blog.post.PostStatus.PUBLISHED
           or (p.status = com.example.blog.post.PostStatus.SCHEDULED and p.publishedAt <= :now))
       order by p.seriesOrder desc
@@ -102,6 +115,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
       select p from Post p
       where p.series.id = :seriesId
         and p.seriesOrder > :seriesOrder
+        and p.visibility = com.example.blog.post.PostVisibility.PUBLIC
+        and p.contentType = com.example.blog.post.PostContentType.ARTICLE
         and (p.status = com.example.blog.post.PostStatus.PUBLISHED
           or (p.status = com.example.blog.post.PostStatus.SCHEDULED and p.publishedAt <= :now))
       order by p.seriesOrder asc
@@ -116,6 +131,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
   @Query("""
       update Post p set p.likeCount = p.likeCount + 1
       where p.slug = :slug
+        and p.visibility = com.example.blog.post.PostVisibility.PUBLIC
+        and p.contentType = com.example.blog.post.PostContentType.ARTICLE
         and (p.status = com.example.blog.post.PostStatus.PUBLISHED
           or (p.status = com.example.blog.post.PostStatus.SCHEDULED and p.publishedAt <= :now))
       """)
@@ -124,6 +141,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
   @Query("""
       select p.likeCount from Post p
       where p.slug = :slug
+        and p.visibility = com.example.blog.post.PostVisibility.PUBLIC
+        and p.contentType = com.example.blog.post.PostContentType.ARTICLE
         and (p.status = com.example.blog.post.PostStatus.PUBLISHED
           or (p.status = com.example.blog.post.PostStatus.SCHEDULED and p.publishedAt <= :now))
       """)

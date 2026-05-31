@@ -8,13 +8,18 @@ import {
   type ContentGovernance,
   type HomeProfile,
   type HomeProfileInput,
+  type KnowledgeExport,
+  type KnowledgeRelation,
+  type KnowledgeRelationInput,
   type MediaAsset,
   type MediaReferences,
   type OperationLog,
   type PageResponse,
   type Post,
+  type PostContentType,
   type PostInput,
   type PostRevision,
+  type PostVisibility,
   type Series,
   type SeriesInput,
   type SitePage,
@@ -26,6 +31,26 @@ import {
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
 export const api = new ApiClient({ baseUrl, getToken: () => tokenStorage.get() });
 
+export interface PostFilters {
+  visibility?: PostVisibility;
+  contentType?: PostContentType;
+}
+
+export interface KnowledgeSearchFilters extends PostFilters {
+  keyword?: string;
+}
+
+function withQuery(path: string, params: object) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      query.set(key, String(value));
+    }
+  });
+  const serialized = query.toString();
+  return serialized ? `${path}?${serialized}` : path;
+}
+
 export const adminApi = {
   login(username: string, password: string) {
     return api.post<AuthResponse>("/v1/auth/login", { username, password });
@@ -33,8 +58,8 @@ export const adminApi = {
   me() {
     return api.get<AuthResponse["user"]>("/v1/auth/me");
   },
-  posts() {
-    return api.get<Post[]>("/v1/admin/posts");
+  posts(filters: PostFilters = {}) {
+    return api.get<Post[]>(withQuery("/v1/admin/posts", filters));
   },
   createPost(input: PostInput) {
     return api.post<Post>("/v1/admin/posts", input);
@@ -50,6 +75,24 @@ export const adminApi = {
   },
   restorePostRevision(postId: number, revisionId: number) {
     return api.post<Post>(`/v1/admin/posts/${postId}/revisions/${revisionId}/restore`);
+  },
+  convertNoteToArticle(id: number) {
+    return api.post<Post>(`/v1/admin/posts/${id}/convert-to-article`);
+  },
+  knowledgeSearch(filters: KnowledgeSearchFilters = {}) {
+    return api.get<PageResponse<Post>>(withQuery("/v1/admin/knowledge-search", filters));
+  },
+  knowledgeRelations(postId?: number) {
+    return api.get<KnowledgeRelation[]>(withQuery("/v1/admin/knowledge-relations", { postId }));
+  },
+  createKnowledgeRelation(input: KnowledgeRelationInput) {
+    return api.post<KnowledgeRelation>("/v1/admin/knowledge-relations", input);
+  },
+  deleteKnowledgeRelation(id: number) {
+    return api.delete(`/v1/admin/knowledge-relations/${id}`);
+  },
+  exportKnowledge() {
+    return api.get<KnowledgeExport>("/v1/admin/export");
   },
   categories() {
     return api.get<Category[]>("/v1/admin/categories");

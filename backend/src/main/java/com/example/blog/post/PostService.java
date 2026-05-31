@@ -59,8 +59,12 @@ public class PostService {
   }
 
   @Transactional(readOnly = true)
-  public List<PostResponse> adminList() {
-    return posts.findAllForAdmin().stream().map(this::response).toList();
+  public List<PostResponse> adminList(Optional<PostVisibility> visibility, Optional<PostContentType> contentType) {
+    return posts.findAllForAdmin().stream()
+        .filter(post -> visibility.map(value -> post.getVisibility() == value).orElse(true))
+        .filter(post -> contentType.map(value -> post.getContentType() == value).orElse(true))
+        .map(this::response)
+        .toList();
   }
 
   @Transactional(readOnly = true)
@@ -187,11 +191,14 @@ public class PostService {
   }
 
   private Specification<Post> publiclyVisiblePosts(Instant now) {
-    return (root, query, criteria) -> criteria.or(
-        criteria.equal(root.get("status"), PostStatus.PUBLISHED),
-        criteria.and(
-            criteria.equal(root.get("status"), PostStatus.SCHEDULED),
-            criteria.lessThanOrEqualTo(root.get("publishedAt"), now)));
+    return (root, query, criteria) -> criteria.and(
+        criteria.equal(root.get("visibility"), PostVisibility.PUBLIC),
+        criteria.equal(root.get("contentType"), PostContentType.ARTICLE),
+        criteria.or(
+            criteria.equal(root.get("status"), PostStatus.PUBLISHED),
+            criteria.and(
+                criteria.equal(root.get("status"), PostStatus.SCHEDULED),
+                criteria.lessThanOrEqualTo(root.get("publishedAt"), now))));
   }
 
   private Specification<Post> keywordMatches(Optional<String> keyword) {
@@ -258,6 +265,11 @@ public class PostService {
     post.setContentHtml(sanitizer.sanitize(request.contentHtml()));
     post.setCoverMediaId(request.coverMediaId());
     post.setStatus(request.status() == null ? PostStatus.DRAFT : request.status());
+    PostContentType contentType = request.contentType() == null ? PostContentType.ARTICLE : request.contentType();
+    post.setContentType(contentType);
+    post.setVisibility(request.visibility() == null
+        ? defaultVisibility(contentType)
+        : request.visibility());
     post.setPublishedAt(request.publishedAt());
     if (post.getStatus() == PostStatus.PUBLISHED && post.getPublishedAt() == null) {
       post.setPublishedAt(Instant.now());
@@ -297,6 +309,10 @@ public class PostService {
       post.setSeries(selectedSeries);
       post.setSeriesOrder(request.seriesOrder());
     }
+  }
+
+  private PostVisibility defaultVisibility(PostContentType contentType) {
+    return contentType == PostContentType.NOTE ? PostVisibility.PRIVATE : PostVisibility.PUBLIC;
   }
 
   private String required(String value, String field) {
@@ -378,6 +394,8 @@ public class PostService {
     post.setContentHtml(revision.getContentHtml());
     post.setCoverMediaId(revision.getCoverMediaId());
     post.setStatus(PostStatus.valueOf(revision.getStatus()));
+    post.setVisibility(PostVisibility.valueOf(revision.getVisibility()));
+    post.setContentType(PostContentType.valueOf(revision.getContentType()));
     post.setPublishedAt(revision.getPublishedAt());
     post.setCategory(revision.getCategoryId() == null ? null : categories.findById(revision.getCategoryId())
         .orElseThrow(() -> new IllegalArgumentException("Unknown category")));

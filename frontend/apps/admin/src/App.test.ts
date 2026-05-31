@@ -37,6 +37,7 @@ describe("Admin App", () => {
     expect(wrapper.find("a[href='/topics']").exists()).toBe(true);
     expect(wrapper.find("a[href='/series']").exists()).toBe(true);
     expect(wrapper.find("a[href='/content-map']").exists()).toBe(true);
+    expect(wrapper.find("a[href='/knowledge']").exists()).toBe(true);
     expect(wrapper.find("[data-test='router-view']").exists()).toBe(true);
   });
 });

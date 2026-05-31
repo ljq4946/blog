@@ -7,6 +7,7 @@
       </div>
       <div class="editor-actions">
         <el-button @click="goBack">返回</el-button>
+        <el-button v-if="canConvertNote" data-test="convert-note" type="warning" @click="convertCurrentNote">转为文章草稿</el-button>
         <el-button data-test="save-draft" :loading="saveState === 'saving'" @click="save('DRAFT')">保存草稿</el-button>
         <el-button data-test="publish-post" type="danger" :loading="saveState === 'saving'" @click="save('PUBLISHED')">发布文章</el-button>
       </div>
@@ -238,6 +239,8 @@ const form = reactive<PostForm>({
   contentHtml: "",
   coverMediaId: null,
   status: "DRAFT",
+  visibility: "PUBLIC",
+  contentType: "ARTICLE",
   categoryId: null,
   topicIds: [],
   seriesId: null,
@@ -285,18 +288,21 @@ const previewDateText = computed(() => formatDate(form.publishedAt) || "草稿�
 const hasBlockingPublishChecks = computed(() =>
   publishChecks.value.some((check) => check.level === "required" && !check.passed)
 );
+const canConvertNote = computed(() => currentPostId.value !== null && form.contentType === "NOTE");
 const editorStatusText = computed(() => {
   const status = form.status === "PUBLISHED" ? "已发布" : "草稿";
+  const contentMode = form.contentType === "NOTE" ? "笔记" : "文章";
+  const visibilityMode = form.visibility === "PRIVATE" ? "私有" : "公开";
   if (saveState.value === "saving") {
-    return `保存中 · ${wordCount.value} 字 · ${status}`;
+    return `保存中 · ${wordCount.value} 字 · ${status} · ${visibilityMode}${contentMode}`;
   }
   if (saveState.value === "error") {
-    return `保存失败 · ${wordCount.value} 字 · ${status}`;
+    return `保存失败 · ${wordCount.value} 字 · ${status} · ${visibilityMode}${contentMode}`;
   }
   if (saveState.value === "saved") {
-    return `已保存${lastSavedAt.value ? ` ${lastSavedAt.value}` : ""} · ${wordCount.value} 字 · ${status}`;
+    return `已保存${lastSavedAt.value ? ` ${lastSavedAt.value}` : ""} · ${wordCount.value} 字 · ${status} · ${visibilityMode}${contentMode}`;
   }
-  return `未保存 · ${wordCount.value} 字 · ${status}`;
+  return `未保存 · ${wordCount.value} 字 · ${status} · ${visibilityMode}${contentMode}`;
 });
 
 watch(
@@ -355,6 +361,8 @@ function assignFormSnapshot(nextForm: PostForm) {
     contentHtml: nextForm.contentHtml ?? "",
     coverMediaId: nextForm.coverMediaId ?? null,
     status: nextForm.status ?? "DRAFT",
+    visibility: nextForm.visibility ?? "PUBLIC",
+    contentType: nextForm.contentType ?? "ARTICLE",
     categoryId: nextForm.categoryId ?? null,
     topicIds: nextForm.topicIds ?? [],
     seriesId: nextForm.seriesId ?? null,
@@ -482,6 +490,14 @@ async function save(status?: Post["status"]) {
     saveState.value = "error";
     saveError.value = errorMessage(err);
   }
+}
+
+async function convertCurrentNote() {
+  if (currentPostId.value === null) {
+    return;
+  }
+  const converted = await adminApi.convertNoteToArticle(Number(currentPostId.value));
+  router.push(`/posts/${converted.id}`);
 }
 
 function goBack() {
@@ -717,6 +733,8 @@ onMounted(async () => {
         contentHtml: current.contentHtml ?? "",
         coverMediaId: current.coverMediaId ?? null,
         status: current.status,
+        visibility: current.visibility ?? "PUBLIC",
+        contentType: current.contentType ?? "ARTICLE",
         categoryId: current.category?.id ?? null,
         topicIds: current.topics?.map((topic) => topic.id) ?? [],
         seriesId: current.series?.id ?? null,
@@ -767,6 +785,8 @@ async function restoreRevision(revisionId: number) {
     contentHtml: restored.contentHtml ?? "",
     coverMediaId: restored.coverMediaId ?? null,
     status: restored.status,
+    visibility: restored.visibility ?? "PUBLIC",
+    contentType: restored.contentType ?? "ARTICLE",
     categoryId: restored.category?.id ?? null,
     topicIds: restored.topics?.map((topic) => topic.id) ?? [],
     seriesId: restored.series?.id ?? null,

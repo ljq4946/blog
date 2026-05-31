@@ -50,6 +50,33 @@ describe("adminApi comments", () => {
     ]);
   });
 
+  it("calls knowledge search, relation, conversion, export, and filtered post endpoints", async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      JSON.stringify({ content: [] }),
+      { headers: { "Content-Type": "application/json" } }
+    ));
+    vi.stubGlobal("fetch", fetchMock);
+    const { adminApi } = await import("./api");
+
+    await adminApi.posts({ visibility: "PRIVATE", contentType: "NOTE" });
+    await adminApi.knowledgeSearch({ keyword: "zettel", visibility: "PRIVATE", contentType: "NOTE" });
+    await adminApi.createKnowledgeRelation({ sourcePostId: 1, targetPostId: 2, type: "SOURCE" });
+    await adminApi.knowledgeRelations(1);
+    await adminApi.deleteKnowledgeRelation(3);
+    await adminApi.convertNoteToArticle(1);
+    await adminApi.exportKnowledge();
+
+    expect(fetchMock.mock.calls.map((call) => [call[0], call[1]?.method ?? "GET"])).toEqual([
+      ["/api/v1/admin/posts?visibility=PRIVATE&contentType=NOTE", "GET"],
+      ["/api/v1/admin/knowledge-search?keyword=zettel&visibility=PRIVATE&contentType=NOTE", "GET"],
+      ["/api/v1/admin/knowledge-relations", "POST"],
+      ["/api/v1/admin/knowledge-relations?postId=1", "GET"],
+      ["/api/v1/admin/knowledge-relations/3", "DELETE"],
+      ["/api/v1/admin/posts/1/convert-to-article", "POST"],
+      ["/api/v1/admin/export", "GET"]
+    ]);
+  });
+
   it("calls admin home profile load and save endpoints", async () => {
     const fetchMock = vi.fn(async () => new Response(
       JSON.stringify({

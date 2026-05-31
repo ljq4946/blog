@@ -20,6 +20,7 @@ const seriesMock = vi.hoisted(() => vi.fn());
 const mediaMock = vi.hoisted(() => vi.fn());
 const postRevisionsMock = vi.hoisted(() => vi.fn());
 const restorePostRevisionMock = vi.hoisted(() => vi.fn());
+const convertNoteToArticleMock = vi.hoisted(() => vi.fn());
 const saveCategoryMock = vi.hoisted(() => vi.fn());
 const saveTagMock = vi.hoisted(() => vi.fn());
 const saveTopicMock = vi.hoisted(() => vi.fn());
@@ -83,6 +84,7 @@ vi.mock("../lib/api", () => ({
     media: mediaMock,
     postRevisions: postRevisionsMock,
     restorePostRevision: restorePostRevisionMock,
+    convertNoteToArticle: convertNoteToArticleMock,
     saveCategory: saveCategoryMock,
     saveTag: saveTagMock,
     saveTopic: saveTopicMock
@@ -151,6 +153,7 @@ describe("PostEditorView", () => {
     seriesMock.mockReset();
     postRevisionsMock.mockReset();
     restorePostRevisionMock.mockReset();
+    convertNoteToArticleMock.mockReset();
     saveCategoryMock.mockReset();
     saveTagMock.mockReset();
     saveTopicMock.mockReset();
@@ -188,6 +191,7 @@ describe("PostEditorView", () => {
     });
     postRevisionsMock.mockResolvedValue([]);
     restorePostRevisionMock.mockResolvedValue({});
+    convertNoteToArticleMock.mockResolvedValue({ id: 9, slug: "converted-article" });
     saveCategoryMock.mockResolvedValue({ id: 8, name: "New Category", slug: "new-category", sortOrder: 1 });
     saveTagMock.mockResolvedValue({ id: 9, name: "New Tag", slug: "new-tag" });
     saveTopicMock.mockResolvedValue({ id: 10, name: "New Topic", slug: "new-topic", sortOrder: 1 });
@@ -326,6 +330,38 @@ describe("PostEditorView", () => {
       seoTitle: "Series SEO",
       seoDescription: "Series SEO description"
     });
+  });
+
+  it("converts an existing private note into a public article draft", async () => {
+    routeMock.params = { id: "5" };
+    postsMock.mockResolvedValue([
+      {
+        id: 5,
+        title: "Private note",
+        slug: "private-note",
+        summary: "Note summary",
+        contentHtml: "<p>Note body</p>",
+        coverMediaId: null,
+        status: "DRAFT",
+        visibility: "PRIVATE",
+        contentType: "NOTE",
+        category: null,
+        topics: [],
+        series: null,
+        seriesOrder: null,
+        tags: [],
+        updatedAt: new Date(now).toISOString(),
+        publishedAt: null
+      }
+    ]);
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    await wrapper.find('[data-test="convert-note"]').trigger("click");
+    await flushPromises();
+
+    expect(convertNoteToArticleMock).toHaveBeenCalledWith(5);
+    expect(pushMock).toHaveBeenCalledWith("/posts/9");
   });
 
   it("stretches the editable textbox to the editor surface", async () => {

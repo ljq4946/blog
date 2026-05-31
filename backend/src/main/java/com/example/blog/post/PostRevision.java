@@ -36,6 +36,12 @@ public class PostRevision {
   @Column(nullable = false)
   private String status;
 
+  @Column(nullable = false)
+  private String visibility;
+
+  @Column(name = "content_type", nullable = false)
+  private String contentType;
+
   @Column(name = "category_id")
   private Long categoryId;
 
@@ -74,6 +80,8 @@ public class PostRevision {
     this.contentHtml = post.getContentHtml();
     this.coverMediaId = post.getCoverMediaId();
     this.status = post.getStatus().name();
+    this.visibility = post.getVisibility().name();
+    this.contentType = post.getContentType().name();
     this.categoryId = post.getCategory() == null ? null : post.getCategory().getId();
     this.topicIds = ids(post.getTopics().stream().map(topic -> topic.getId()).sorted().toList());
     this.tagIds = ids(post.getTags().stream().map(tag -> tag.getId()).sorted().toList());
@@ -119,6 +127,14 @@ public class PostRevision {
 
   public String getStatus() {
     return status;
+  }
+
+  public String getVisibility() {
+    return visibility;
+  }
+
+  public String getContentType() {
+    return contentType;
   }
 
   public Long getCategoryId() {

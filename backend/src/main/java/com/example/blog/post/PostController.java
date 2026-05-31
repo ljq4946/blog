@@ -18,8 +18,10 @@ public class PostController {
   }
 
   @GetMapping("/api/v1/admin/posts")
-  public List<PostResponse> adminList() {
-    return postService.adminList();
+  public List<PostResponse> adminList(
+      @RequestParam Optional<PostVisibility> visibility,
+      @RequestParam Optional<PostContentType> contentType) {
+    return postService.adminList(visibility, contentType);
   }
 
   @PostMapping("/api/v1/admin/posts")

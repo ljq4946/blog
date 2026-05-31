@@ -4,6 +4,14 @@
 
 - No unreleased changes.
 
+## 2.0.0 - 2026-05-31
+
+- Upgrade the blog into a private knowledge system with `PUBLIC`/`PRIVATE` visibility and `ARTICLE`/`NOTE` content types.
+- Add authenticated knowledge search, manual knowledge relations, private note to public article draft conversion, and JSON backup export.
+- Keep public APIs, RSS, Sitemap, archive, comments, likes, topic pages, and series pages limited to public published articles.
+- Add an admin knowledge base workspace for quick private note capture and conversion into publishable drafts.
+- Raise backend, admin, web, and shared package versions to `2.0.0`.
+
 ## 1.6.0 - 2026-05-30
 
 - Add a public homepage portfolio path that reuses the latest article, first topic, first series, and archive entry.

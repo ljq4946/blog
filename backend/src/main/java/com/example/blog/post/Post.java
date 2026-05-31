@@ -43,6 +43,14 @@ public class Post {
   @Column(nullable = false)
   private PostStatus status = PostStatus.DRAFT;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private PostVisibility visibility = PostVisibility.PUBLIC;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "content_type", nullable = false)
+  private PostContentType contentType = PostContentType.ARTICLE;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "category_id")
   private Category category;
@@ -172,6 +180,22 @@ public class Post {
 
   public void setStatus(PostStatus status) {
     this.status = status;
+  }
+
+  public PostVisibility getVisibility() {
+    return visibility;
+  }
+
+  public void setVisibility(PostVisibility visibility) {
+    this.visibility = visibility;
+  }
+
+  public PostContentType getContentType() {
+    return contentType;
+  }
+
+  public void setContentType(PostContentType contentType) {
+    this.contentType = contentType;
   }
 
   public Category getCategory() {

@@ -42,7 +42,7 @@ class FlywayMigrationTest {
 
           assertThat(tables).contains(
               "users", "posts", "categories", "tags", "post_tags", "media_assets", "site_pages",
-              "topics", "post_topics", "series", "post_revisions", "operation_logs");
+              "topics", "post_topics", "series", "post_revisions", "operation_logs", "knowledge_relations");
         });
   }
 

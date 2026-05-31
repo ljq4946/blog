@@ -30,6 +30,20 @@
           </el-select>
         </el-form-item>
 
+        <el-form-item label="可见性">
+          <el-select :model-value="form.visibility ?? 'PUBLIC'" @update:model-value="updateField('visibility', $event)">
+            <el-option label="公开" value="PUBLIC" />
+            <el-option label="私有" value="PRIVATE" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="内容类型">
+          <el-select :model-value="form.contentType ?? 'ARTICLE'" @update:model-value="updateField('contentType', $event)">
+            <el-option label="文章" value="ARTICLE" />
+            <el-option label="笔记" value="NOTE" />
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="发布时间 / 排期">
           <el-date-picker
             :model-value="form.publishedAt"

@@ -1,4 +1,7 @@
 export type PostStatus = "DRAFT" | "SCHEDULED" | "PUBLISHED";
+export type PostVisibility = "PUBLIC" | "PRIVATE";
+export type PostContentType = "ARTICLE" | "NOTE";
+export type KnowledgeRelationType = "RELATED" | "SOURCE" | "FOLLOW_UP" | "EXPANDS";
 
 export interface Category {
   id: number;
@@ -64,6 +67,8 @@ export interface Post {
   coverMediaId?: number | null;
   coverMediaUrl?: string | null;
   status: PostStatus;
+  visibility: PostVisibility;
+  contentType: PostContentType;
   category?: Pick<Category, "id" | "name" | "slug"> | null;
   topics?: Array<Pick<Topic, "id" | "name" | "slug">>;
   series?: Pick<Series, "id" | "name" | "slug" | "primaryTopic"> | null;
@@ -87,6 +92,8 @@ export interface PostInput {
   contentHtml?: string;
   coverMediaId?: number | null;
   status: PostStatus;
+  visibility?: PostVisibility;
+  contentType?: PostContentType;
   categoryId?: number | null;
   topicIds: number[];
   seriesId?: number | null;
@@ -141,6 +148,8 @@ export interface PostRevision {
   contentHtml?: string | null;
   coverMediaId?: number | null;
   status: PostStatus;
+  visibility?: PostVisibility;
+  contentType?: PostContentType;
   categoryId?: number | null;
   topicIds: number[];
   seriesId?: number | null;
@@ -309,4 +318,37 @@ export interface ContentGovernance {
   postIssues: PostIssue[];
   topicCoverage: TopicCoverage[];
   seriesCoverage: SeriesCoverage[];
+}
+
+export interface KnowledgePostSummary {
+  id: number;
+  title: string;
+  slug: string;
+  status: PostStatus;
+  visibility: PostVisibility;
+  contentType: PostContentType;
+}
+
+export interface KnowledgeRelation {
+  id: number;
+  sourcePost: KnowledgePostSummary;
+  targetPost: KnowledgePostSummary;
+  type: KnowledgeRelationType;
+  createdAt: string;
+}
+
+export interface KnowledgeRelationInput {
+  sourcePostId: number;
+  targetPostId: number;
+  type: KnowledgeRelationType;
+}
+
+export interface KnowledgeExport {
+  exportedAt: string;
+  posts: Post[];
+  categories: Category[];
+  tags: Tag[];
+  topics: Topic[];
+  series: Series[];
+  media: MediaAsset[];
 }

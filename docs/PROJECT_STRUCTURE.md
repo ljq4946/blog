@@ -1,6 +1,6 @@
 # Project Structure
 
-本文档说明当前仓库的模块边界、运行入口和维护约定。1.6 发布前检查清单见 [RELEASE_1_6_CHECKLIST.md](RELEASE_1_6_CHECKLIST.md)，1.5、1.4、1.3、1.2、1.1 和 1.0 历史检查单保留在本目录中。
+本文档说明当前仓库的模块边界、运行入口和维护约定。2.0 发布前检查清单见 [RELEASE_2_0_CHECKLIST.md](RELEASE_2_0_CHECKLIST.md)，1.6、1.5、1.4、1.3、1.2、1.1 和 1.0 历史检查单保留在本目录中。
 
 ## 顶层目录
 
@@ -23,7 +23,7 @@
 核心目录:
 
 - `src/main/java/com/example/blog/auth/`: 登录、JWT、认证过滤器、管理员初始化和用户角色。
-- `src/main/java/com/example/blog/post/`: 文章实体、DTO、仓储、服务、修订历史、管理 API、公开列表、搜索、详情、相关文章和归档 API。
+- `src/main/java/com/example/blog/post/`: 文章/笔记实体、DTO、仓储、服务、修订历史、管理 API、公开列表、搜索、详情、相关文章和归档 API。
 - `src/main/java/com/example/blog/category/` 与 `tag/`: 分类和标签的公开读取与后台管理 API。
 - `src/main/java/com/example/blog/topic/`: 扁平专题、公开专题页数据和后台专题管理 API。
 - `src/main/java/com/example/blog/series/`: 有序阅读系列、可选主专题关联和系列公开/后台 API。
@@ -34,13 +34,14 @@
 - `src/main/java/com/example/blog/operation/`: 后台关键作者操作日志。
 - `src/main/java/com/example/blog/statistics/`: 后台轻量统计快照，汇总浏览量、点赞数、评论状态和热门文章。
 - `src/main/java/com/example/blog/governance/`: 后台内容治理快照，汇总文章待完善项、专题覆盖和系列维护信号。
+- `src/main/java/com/example/blog/knowledge/`: 后台知识沉淀能力，提供私有笔记搜索、内容关系、笔记转文章草稿和备份导出。
 - `src/main/java/com/example/blog/discovery/`: `sitemap.xml`、`feed.xml`、`robots.txt` 和 `/health`。
 - `src/main/java/com/example/blog/config/`: CORS、JWT、上传、站点信息、异常处理和安全配置。
 - `src/main/java/com/example/blog/security/html/`: HTML 内容清洗。
 - `src/main/resources/db/migration/`: Flyway 数据库迁移。
 - `src/test/java/com/example/blog/`: 后端单元和集成测试。
 
-当前后端 Maven 版本为 `1.6.0`。
+当前后端 Maven 版本为 `2.0.0`。
 
 ## 前端: `frontend/`
 
@@ -54,12 +55,12 @@
 
 - 登录与当前用户校验。
 - 文章列表搜索筛选、新建、编辑、发布状态、排期、SEO 字段、摘要、分类、标签和封面/引用媒体管理。
-- 控制台展示内容治理指标和轻量反馈统计；内容地图将空专题、系列断档和文章待完善项整理为下一步维护动作；专题与系列管理展示覆盖数量、空专题和系列断档，并支持在文章发布面板中维护专题归属、系列归属和系列顺序。
+- 控制台展示内容治理指标和轻量反馈统计；知识库提供私有笔记收集、搜索和转文章草稿；内容地图将空专题、系列断档和文章待完善项整理为下一步维护动作；专题与系列管理展示覆盖数量、空专题和系列断档，并支持在文章发布面板中维护专题归属、系列归属和系列顺序。
 - 文章编辑器提供项目案例、技术笔记和版本复盘写作模板，用于快速生成可继续编辑的文章骨架。
 - 分类、标签、媒体库、评论、关于页和首页资料管理。
 - 通过 `src/lib/api.ts` 调用 `/api/v1/admin/...` 与 `/api/v1/auth/...`。
 
-当前包版本为 `1.6.0`。
+当前包版本为 `2.0.0`。
 
 ### `frontend/apps/web/`
 
@@ -72,18 +73,18 @@
 - 文章目录、阅读偏好、阅读进度、代码高亮、相关文章、浏览量、评论和点赞交互。
 - 通过 `src/lib/api.ts` 调用公开 API，例如 `/api/v1/posts`、`/api/v1/archive`、`/api/v1/categories`、`/api/v1/tags` 等。
 
-当前包版本为 `1.6.0`。
+当前包版本为 `2.0.0`。
 
 ### `frontend/packages/shared/`
 
 共享包提供:
 
-- DTO 和领域类型定义。
+- DTO 和领域类型定义，包含文章可见性、内容类型和知识关系类型。
 - `ApiClient` HTTP 封装。
 - Token 存储和认证辅助逻辑。
 - 可被 `@blog/admin` 和 `@blog/web` 通过 workspace 依赖复用。
 
-当前包版本为 `1.6.0`。
+当前包版本为 `2.0.0`。
 
 ### 共享样式
 
@@ -95,7 +96,7 @@
 - `nginx.conf`: 统一入口路由，转发 `/api/`、`/uploads/`、发现文件、健康检查、`/admin/` 和前台页面。
 - `.env.example`: 生产风格环境变量模板，复制为 `.env` 后再修改密钥、域名和数据库密码。
 
-后端镜像使用 Maven 构建 `1.6.0` jar，并在 Dockerfile 中使用 `target/*.jar` 复制产物，避免后续版本号变更导致镜像构建失败。前端 Docker build context 由 `frontend/.dockerignore` 排除依赖目录、构建产物、缓存、日志、覆盖率和本地环境文件。
+后端镜像使用 Maven 构建 `2.0.0` jar，并在 Dockerfile 中使用 `target/*.jar` 复制产物，避免后续版本号变更导致镜像构建失败。前端 Docker build context 由 `frontend/.dockerignore` 排除依赖目录、构建产物、缓存、日志、覆盖率和本地环境文件。
 
 ## 脚本: `scripts/`
 
