@@ -1,14 +1,20 @@
 package com.example.blog.discovery;
 
 import com.example.blog.config.SiteProperties;
+import com.example.blog.config.UploadProperties;
 import com.example.blog.post.Post;
 import com.example.blog.post.PostRepository;
-import com.example.blog.post.PostStatus;
 import com.example.blog.series.SeriesRepository;
 import com.example.blog.topic.TopicRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.sql.DataSource;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Connection;
 
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -24,16 +30,22 @@ public class PublicDiscoveryController {
   private final TopicRepository topics;
   private final SeriesRepository series;
   private final SiteProperties site;
+  private final DataSource dataSource;
+  private final UploadProperties uploadProperties;
 
   public PublicDiscoveryController(
       PostRepository posts,
       TopicRepository topics,
       SeriesRepository series,
-      SiteProperties site) {
+      SiteProperties site,
+      DataSource dataSource,
+      UploadProperties uploadProperties) {
     this.posts = posts;
     this.topics = topics;
     this.series = series;
     this.site = site;
+    this.dataSource = dataSource;
+    this.uploadProperties = uploadProperties;
   }
 
   @GetMapping(value = "/sitemap.xml", produces = MediaType.APPLICATION_XML_VALUE)
@@ -49,7 +61,7 @@ public class PublicDiscoveryController {
         .forEach(topic -> appendSitemapUrl(xml, baseUrl + "/topics/" + topic.getSlug()));
     series.findAllByOrderBySortOrderAscNameAsc()
         .forEach(item -> appendSitemapUrl(xml, baseUrl + "/series/" + item.getSlug()));
-    posts.findByStatusOrderByPublishedAtDescCreatedAtDesc(PostStatus.PUBLISHED)
+    posts.findVisibleOrderByPublishedAtDescCreatedAtDesc(java.time.Instant.now())
         .forEach(post -> appendSitemapUrl(xml, baseUrl + "/posts/" + post.getSlug()));
     xml.append("</urlset>\n");
     return xml.toString();
@@ -66,7 +78,7 @@ public class PublicDiscoveryController {
     appendElement(xml, "title", site.getName());
     appendElement(xml, "link", baseUrl + "/");
     appendElement(xml, "description", site.getDescription());
-    posts.findTop20ByStatusOrderByPublishedAtDescCreatedAtDesc(PostStatus.PUBLISHED)
+    posts.findVisibleForFeed(java.time.Instant.now(), PageRequest.of(0, 20))
         .forEach(post -> appendFeedItem(xml, baseUrl, post));
     xml.append("</channel>\n</rss>\n");
     return xml.toString();
@@ -83,7 +95,28 @@ public class PublicDiscoveryController {
 
   @GetMapping("/health")
   public Map<String, String> health() {
-    return Map.of("status", "UP");
+    String database = databaseStatus();
+    String uploads = uploadsStatus();
+    String status = "UP".equals(database) && "UP".equals(uploads) ? "UP" : "DOWN";
+    return Map.of("status", status, "database", database, "uploads", uploads);
+  }
+
+  private String databaseStatus() {
+    try (Connection ignored = dataSource.getConnection()) {
+      return "UP";
+    } catch (Exception ignored) {
+      return "DOWN";
+    }
+  }
+
+  private String uploadsStatus() {
+    try {
+      Path root = Path.of(uploadProperties.getDir()).toAbsolutePath().normalize();
+      Files.createDirectories(root);
+      return Files.isWritable(root) ? "UP" : "DOWN";
+    } catch (Exception ignored) {
+      return "DOWN";
+    }
   }
 
   private void appendSitemapUrl(StringBuilder xml, String url) {

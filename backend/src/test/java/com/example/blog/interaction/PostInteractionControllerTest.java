@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -49,7 +50,7 @@ class PostInteractionControllerTest {
   }
 
   @Test
-  void publicCommentRequiresPublishedPostAndHidesEmail() throws Exception {
+  void publicCommentRequiresPublishedPostAndStaysHiddenUntilApproved() throws Exception {
     mvc.perform(post("/api/v1/posts/public-post/comments")
             .contentType(MediaType.APPLICATION_JSON)
             .content("""
@@ -62,7 +63,29 @@ class PostInteractionControllerTest {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.nickname").value("Reader"))
         .andExpect(jsonPath("$.content").value("<b>Hello</b> from comments"))
+        .andExpect(jsonPath("$.status").value("PENDING"))
         .andExpect(content().string(not(containsString("reader@example.com"))));
+
+    mvc.perform(get("/api/v1/posts/public-post/comments"))
+        .andExpect(status().isOk())
+        .andExpect(content().json("[]"));
+
+    String token = login();
+    String adminResponse = mvc.perform(get("/api/v1/admin/comments")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].status").value("PENDING"))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    Long commentId = Long.valueOf(adminResponse.replaceAll("^.*\"id\"\\s*:\\s*(\\d+).*$", "$1"));
+    mvc.perform(put("/api/v1/admin/comments/" + commentId + "/status")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"status\":\"APPROVED\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("APPROVED"));
 
     mvc.perform(get("/api/v1/posts/public-post/comments"))
         .andExpect(status().isOk())
@@ -103,6 +126,7 @@ class PostInteractionControllerTest {
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].postTitle").value("Public Post"))
+        .andExpect(jsonPath("$[0].status").value("PENDING"))
         .andExpect(jsonPath("$[0].email").value("reader@example.com"))
         .andReturn()
         .getResponse()

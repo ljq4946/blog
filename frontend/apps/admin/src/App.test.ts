@@ -27,6 +27,7 @@ describe("Admin App", () => {
     expect(wrapper.get(".brand").text()).toContain("博客管理");
     expect(wrapper.find(".brand-mark").exists()).toBe(true);
     expect(wrapper.get(".sidebar").text()).toContain("文章");
+    expect(wrapper.get(".sidebar").text()).toContain("内容地图");
     expect(wrapper.get(".sidebar").text()).toContain("首页");
     expect(wrapper.get(".sidebar").text()).toContain("分类");
     expect(wrapper.get(".sidebar").text()).toContain("标签");
@@ -35,6 +36,7 @@ describe("Admin App", () => {
     expect(wrapper.get(".sidebar").text()).toContain("关于");
     expect(wrapper.find("a[href='/topics']").exists()).toBe(true);
     expect(wrapper.find("a[href='/series']").exists()).toBe(true);
+    expect(wrapper.find("a[href='/content-map']").exists()).toBe(true);
     expect(wrapper.find("[data-test='router-view']").exists()).toBe(true);
   });
 });

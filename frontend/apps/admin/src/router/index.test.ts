@@ -7,6 +7,7 @@ describe("admin router", () => {
       "/",
       "/posts",
       "/posts/new",
+      "/content-map",
       "/home-profile",
       "/categories",
       "/tags",

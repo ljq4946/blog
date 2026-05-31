@@ -8,6 +8,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.Instant;
 
+import static com.example.blog.media.MediaService.MediaReferences;
+
 @RestController
 @RequestMapping("/api/v1/admin/media")
 public class MediaController {
@@ -34,6 +36,11 @@ public class MediaController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void delete(@PathVariable Long id) throws IOException {
     mediaService.delete(id);
+  }
+
+  @GetMapping("/{id}/references")
+  public MediaReferences references(@PathVariable Long id) {
+    return mediaService.references(id);
   }
 
   public record MediaResponse(

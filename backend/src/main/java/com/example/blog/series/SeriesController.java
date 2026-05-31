@@ -2,7 +2,6 @@ package com.example.blog.series;
 
 import com.example.blog.post.Post;
 import com.example.blog.post.PostRepository;
-import com.example.blog.post.PostStatus;
 import com.example.blog.topic.Topic;
 import com.example.blog.topic.TopicRepository;
 import jakarta.validation.Valid;
@@ -11,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -36,7 +36,7 @@ public class SeriesController {
     Series found = series.findBySlug(slug).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     return new SeriesDetailResponse(
         SeriesResponse.from(found),
-        posts.findBySeriesSlugAndStatusOrderBySeriesOrderAsc(slug, PostStatus.PUBLISHED)
+        posts.findVisibleBySeriesSlugOrderBySeriesOrderAsc(slug, Instant.now())
             .stream()
             .map(PostSummary::from)
             .toList());

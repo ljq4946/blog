@@ -10,12 +10,16 @@ public final class PostInteractionDtos {
   public record CommentRequest(String nickname, String email, String content) {
   }
 
-  public record PublicCommentResponse(Long id, String nickname, String content, Instant createdAt) {
+  public record CommentStatusRequest(String status) {
+  }
+
+  public record PublicCommentResponse(Long id, String nickname, String content, String status, Instant createdAt) {
     static PublicCommentResponse from(PostComment comment) {
       return new PublicCommentResponse(
           comment.getId(),
           comment.getNickname(),
           comment.getContent(),
+          comment.getStatus().name(),
           comment.getCreatedAt());
     }
   }
@@ -28,6 +32,7 @@ public final class PostInteractionDtos {
       String nickname,
       String email,
       String content,
+      String status,
       Instant createdAt) {
     static AdminCommentResponse from(PostComment comment) {
       return new AdminCommentResponse(
@@ -38,6 +43,7 @@ public final class PostInteractionDtos {
           comment.getNickname(),
           comment.getEmail(),
           comment.getContent(),
+          comment.getStatus().name(),
           comment.getCreatedAt());
     }
   }

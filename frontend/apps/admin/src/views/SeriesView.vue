@@ -13,6 +13,16 @@
       <el-table-column label="主专题">
         <template #default="{ row }">{{ row.primaryTopic?.name ?? "未关联" }}</template>
       </el-table-column>
+      <el-table-column label="文章数" width="120">
+        <template #default="{ row }">{{ auditFor(row.id)?.postCount ?? 0 }} 篇文章</template>
+      </el-table-column>
+      <el-table-column label="治理状态" min-width="220">
+        <template #default="{ row }">
+          <div class="series-status">
+            <span v-for="note in seriesNotes(auditFor(row.id))" :key="note">{{ note }}</span>
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column prop="sortOrder" label="排序" width="90" />
       <el-table-column label="操作" width="170">
         <template #default="{ row }">
@@ -49,22 +59,29 @@
 </template>
 
 <script setup lang="ts">
-import type { Series, SeriesInput, Topic } from "@blog/shared";
-import { onMounted, reactive, ref } from "vue";
+import type { ContentGovernance, Series, SeriesCoverage, SeriesInput, Topic } from "@blog/shared";
+import { computed, onMounted, reactive, ref } from "vue";
 import { adminApi } from "../lib/api";
 
 const rows = ref<Series[]>([]);
 const topics = ref<Topic[]>([]);
+const governance = ref<ContentGovernance | null>(null);
 const visible = ref(false);
 const saving = ref(false);
 const error = ref("");
 const dialogError = ref("");
 const draft = reactive<Record<string, unknown>>({});
+const seriesCoverage = computed(() => governance.value?.seriesCoverage ?? []);
 
 async function load() {
-  const [loadedSeries, loadedTopics] = await Promise.all([adminApi.series(), adminApi.topics()]);
+  const [loadedSeries, loadedTopics, snapshot] = await Promise.all([
+    adminApi.series(),
+    adminApi.topics(),
+    adminApi.contentGovernance().catch(() => null)
+  ]);
   rows.value = loadedSeries;
   topics.value = loadedTopics;
+  governance.value = snapshot;
 }
 
 function open(row: Partial<Series>) {
@@ -104,5 +121,42 @@ async function remove(id: number) {
   }
 }
 
+function auditFor(id: number) {
+  return seriesCoverage.value.find((item) => item.id === id) ?? null;
+}
+
+function seriesNotes(item: SeriesCoverage | null) {
+  if (!item) {
+    return ["未统计"];
+  }
+  const notes: string[] = [];
+  if (item.empty) {
+    notes.push("空系列");
+  }
+  if (item.orderConflict) {
+    notes.push("顺序冲突");
+  }
+  if (item.missingOrders.length) {
+    notes.push(`缺失章节 ${item.missingOrders.join("、")}`);
+  }
+  return notes.length ? notes : ["结构完整"];
+}
+
 onMounted(load);
 </script>
+
+<style scoped>
+.series-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.series-status span {
+  background: var(--paper-soft);
+  border: 2px solid var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 3px 6px;
+}
+</style>

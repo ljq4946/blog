@@ -28,6 +28,25 @@
             <el-button data-test="preview-mode" :type="activeMode === 'preview' ? 'primary' : 'default'" @click="activeMode = 'preview'">预览</el-button>
           </div>
 
+          <section class="writing-template-panel" aria-label="写作模板">
+            <div>
+              <h2>写作模板</h2>
+              <p>快速插入常用文章结构，保留当前发布设置。</p>
+            </div>
+            <div class="writing-template-list">
+              <button
+                v-for="template in writingTemplates"
+                :key="template.id"
+                type="button"
+                :data-test="`template-${template.id}`"
+                @click="applyTemplate(template.id)"
+              >
+                <strong>{{ template.name }}</strong>
+                <span>{{ template.description }}</span>
+              </button>
+            </div>
+          </section>
+
           <template v-if="activeMode === 'edit'">
             <div class="toolbar" aria-label="文章编辑工具栏">
               <el-button aria-label="加粗" @click="editor?.chain().focus().toggleBold().run()">B</el-button>
@@ -89,7 +108,19 @@
           @update:form="updateForm"
           @restore-recovery="restoreRecovery"
           @discard-recovery="discardRecovery"
+          @quick-create="quickCreateTaxonomy"
         />
+
+        <section v-if="revisions.length" class="revision-panel">
+          <h2>修订历史</h2>
+          <ol>
+            <li v-for="revision in revisions" :key="revision.id">
+              <span>{{ revision.title }}</span>
+              <time>{{ formatDate(revision.createdAt) }}</time>
+              <el-button size="small" @click="restoreRevision(revision.id)">恢复</el-button>
+            </li>
+          </ol>
+        </section>
       </div>
     </el-form>
 
@@ -143,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { formatDate, slugify, type Category, type MediaAsset, type Post, type Series, type Tag, type Topic } from "@blog/shared";
+import { formatDate, slugify, type Category, type MediaAsset, type Post, type PostRevision, type Series, type Tag, type Topic } from "@blog/shared";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import StarterKit from "@tiptap/starter-kit";
@@ -161,6 +192,7 @@ import {
   type PostForm,
   type PostRecoverySnapshot
 } from "../features/posts/postForm";
+import { applyWritingTemplate, writingTemplates, type WritingTemplate } from "../features/posts/postTemplates";
 import { adminApi } from "../lib/api";
 import PostPublishPanel from "./PostPublishPanel.vue";
 
@@ -185,6 +217,7 @@ const tags = ref<Tag[]>([]);
 const topics = ref<Topic[]>([]);
 const series = ref<Series[]>([]);
 const mediaAssets = ref<MediaAsset[]>([]);
+const revisions = ref<PostRevision[]>([]);
 const errors = ref<string[]>([]);
 const saveError = ref("");
 const publishCheckError = ref("");
@@ -200,6 +233,8 @@ const form = reactive<PostForm>({
   title: "",
   slug: "",
   summary: "",
+  seoTitle: "",
+  seoDescription: "",
   contentHtml: "",
   coverMediaId: null,
   status: "DRAFT",
@@ -207,7 +242,8 @@ const form = reactive<PostForm>({
   topicIds: [],
   seriesId: null,
   seriesOrder: null,
-  tagIds: []
+  tagIds: [],
+  publishedAt: null
 });
 const linkForm = reactive({
   text: "",
@@ -304,11 +340,18 @@ function applyFormSnapshot(nextForm: PostForm) {
   editor.value?.commands.setContent(form.contentHtml ?? "");
 }
 
+function applyTemplate(templateId: WritingTemplate["id"]) {
+  applyFormSnapshot(applyWritingTemplate(form, templateId));
+  saveState.value = "idle";
+}
+
 function assignFormSnapshot(nextForm: PostForm) {
   Object.assign(form, {
     title: nextForm.title ?? "",
     slug: nextForm.slug ?? "",
     summary: nextForm.summary ?? "",
+    seoTitle: nextForm.seoTitle ?? "",
+    seoDescription: nextForm.seoDescription ?? "",
     contentHtml: nextForm.contentHtml ?? "",
     coverMediaId: nextForm.coverMediaId ?? null,
     status: nextForm.status ?? "DRAFT",
@@ -669,6 +712,8 @@ onMounted(async () => {
         title: current.title,
         slug: current.slug,
         summary: current.summary ?? "",
+        seoTitle: current.seoTitle ?? "",
+        seoDescription: current.seoDescription ?? "",
         contentHtml: current.contentHtml ?? "",
         coverMediaId: current.coverMediaId ?? null,
         status: current.status,
@@ -681,6 +726,7 @@ onMounted(async () => {
       });
       serverSnapshotUpdatedAt.value = current.updatedAt ? Date.parse(current.updatedAt) : 0;
     }
+    await loadRevisions();
   }
   refreshSavedSnapshot();
   saveState.value = "idle";
@@ -694,6 +740,68 @@ onBeforeUnmount(() => {
   window.removeEventListener("beforeunload", handleBeforeUnload);
   editor.value?.destroy();
 });
+
+async function loadRevisions() {
+  if (currentPostId.value === null) {
+    revisions.value = [];
+    return;
+  }
+  try {
+    revisions.value = await adminApi.postRevisions(Number(currentPostId.value));
+  } catch {
+    revisions.value = [];
+  }
+}
+
+async function restoreRevision(revisionId: number) {
+  if (currentPostId.value === null) {
+    return;
+  }
+  const restored = await adminApi.restorePostRevision(Number(currentPostId.value), revisionId);
+  applyFormSnapshot({
+    title: restored.title,
+    slug: restored.slug,
+    summary: restored.summary ?? "",
+    seoTitle: restored.seoTitle ?? "",
+    seoDescription: restored.seoDescription ?? "",
+    contentHtml: restored.contentHtml ?? "",
+    coverMediaId: restored.coverMediaId ?? null,
+    status: restored.status,
+    categoryId: restored.category?.id ?? null,
+    topicIds: restored.topics?.map((topic) => topic.id) ?? [],
+    seriesId: restored.series?.id ?? null,
+    seriesOrder: restored.seriesOrder ?? null,
+    tagIds: restored.tags?.map((tag) => tag.id) ?? [],
+    publishedAt: restored.publishedAt ?? null
+  });
+  refreshSavedSnapshot();
+  saveState.value = "saved";
+  await loadRevisions();
+}
+
+async function quickCreateTaxonomy(type: "category" | "tag" | "topic") {
+  const label = type === "category" ? "分类" : type === "tag" ? "标签" : "专题";
+  const name = window.prompt(`新建${label}名称`);
+  if (!name?.trim()) {
+    return;
+  }
+  const slug = slugify(name);
+  if (type === "category") {
+    const created = await adminApi.saveCategory({ name, slug, description: "", sortOrder: categories.value.length });
+    categories.value = [...categories.value, created];
+    form.categoryId = created.id;
+    return;
+  }
+  if (type === "tag") {
+    const created = await adminApi.saveTag({ name, slug });
+    tags.value = [...tags.value, created];
+    form.tagIds = [...form.tagIds, created.id];
+    return;
+  }
+  const created = await adminApi.saveTopic({ name, slug, description: "", sortOrder: topics.value.length });
+  topics.value = [...topics.value, created];
+  form.topicIds = [...form.topicIds, created.id];
+}
 </script>
 
 <style scoped>
@@ -740,6 +848,100 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 12px;
   min-width: 0;
+}
+
+.writing-template-panel {
+  background: var(--paper-soft);
+  border: 2px solid var(--ink);
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.writing-template-panel h2,
+.writing-template-panel p {
+  margin: 0;
+}
+
+.writing-template-panel h2 {
+  font-family: "Archivo Black", "Arial Black", sans-serif;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.writing-template-panel p {
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.writing-template-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.writing-template-list button {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: 6px;
+  padding: 10px;
+  text-align: left;
+}
+
+.writing-template-list strong {
+  font-weight: 900;
+}
+
+.writing-template-list span {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.revision-panel {
+  background: var(--paper-soft);
+  border: 2px solid var(--ink);
+  box-shadow: 6px 6px 0 rgba(17, 16, 13, 0.16);
+  display: grid;
+  gap: 10px;
+  grid-column: 2;
+  padding: 14px;
+}
+
+.revision-panel h2 {
+  font-family: "Archivo Black", "Arial Black", sans-serif;
+  font-size: 16px;
+  line-height: 1;
+  margin: 0;
+}
+
+.revision-panel ol {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.revision-panel li {
+  align-items: center;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 8px;
+}
+
+.revision-panel time {
+  color: var(--blue);
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .toolbar {
@@ -1098,6 +1300,10 @@ onBeforeUnmount(() => {
 @media (max-width: 980px) {
   .writing-workbench {
     grid-template-columns: 1fr;
+  }
+
+  .revision-panel {
+    grid-column: auto;
   }
 
   .article-layout {

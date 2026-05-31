@@ -100,6 +100,19 @@
         </div>
       </article>
     </section>
+    <section class="content-band home-showcase" data-test="home-showcase" aria-label="作品集路径">
+      <div class="section-head">
+        <h2>作品集路径</h2>
+        <p>从代表文章进入专题、系列和完整归档。</p>
+      </div>
+      <div class="showcase-grid">
+        <RouterLink v-for="link in showcaseLinks" :key="link.href" class="showcase-card" :to="link.href">
+          <span>{{ link.label }}</span>
+          <strong>{{ link.title }}</strong>
+          <p>{{ link.description }}</p>
+        </RouterLink>
+      </div>
+    </section>
     <section class="content-band latest-posts">
       <div class="section-head">
         <h2>最新文章</h2>
@@ -109,14 +122,46 @@
       </div>
       <EmptyState v-else title="暂无已发布文章" />
     </section>
+    <section class="content-band home-discovery" data-test="home-discovery" aria-label="内容发现">
+      <div class="section-head">
+        <h2>内容地图</h2>
+        <RouterLink to="/archive">全部文章</RouterLink>
+      </div>
+      <div class="home-discovery-grid">
+        <article class="home-discovery-panel">
+          <div class="module-kicker">Topics / Explore</div>
+          <h3>重点专题</h3>
+          <div v-if="topics.length" class="home-discovery-links">
+            <RouterLink v-for="topic in topics.slice(0, 3)" :key="topic.id" class="knowledge-card" :to="`/topics/${topic.slug}`">
+              <strong>{{ topic.name }}</strong>
+              <span>{{ topic.description || "持续补全中" }}</span>
+            </RouterLink>
+          </div>
+          <EmptyState v-else title="暂无专题" />
+        </article>
+        <article class="home-discovery-panel">
+          <div class="module-kicker">Series / In progress</div>
+          <h3>进行中的系列</h3>
+          <div v-if="seriesItems.length" class="home-discovery-links">
+            <RouterLink v-for="item in seriesItems.slice(0, 3)" :key="item.id" class="knowledge-card" :to="`/series/${item.slug}`">
+              <strong>{{ item.name }}</strong>
+              <span>{{ item.description || "按顺序阅读" }}</span>
+              <em v-if="item.primaryTopic">{{ item.primaryTopic.name }}</em>
+            </RouterLink>
+          </div>
+          <EmptyState v-else title="暂无系列" />
+        </article>
+      </div>
+    </section>
   </main>
 </template>
 
 <script setup lang="ts">
-import type { HomeProfile, Post } from "@blog/shared";
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import type { HomeProfile, Post, Series, Topic } from "@blog/shared";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import EmptyState from "../components/EmptyState.vue";
 import PostCard from "../components/PostCard.vue";
+import { buildShowcaseLinks } from "../features/showcase";
 import { publicApi } from "../lib/api";
 import { absoluteUrl, applySiteMetadata } from "../lib/siteMetadata";
 
@@ -138,6 +183,8 @@ const defaultHomeProfile: HomeProfile = {
 };
 
 const posts = ref<Post[]>([]);
+const topics = ref<Topic[]>([]);
+const seriesItems = ref<Series[]>([]);
 const homeProfile = ref<HomeProfile>({ ...defaultHomeProfile, focusItems: [...defaultHomeProfile.focusItems] });
 const audioRef = ref<HTMLAudioElement | null>(null);
 const posterRef = ref<HTMLElement | null>(null);
@@ -145,6 +192,7 @@ const posterScroll = ref(0);
 const isMusicPlaying = ref(false);
 const listeningTime = ref(formatListeningTime(new Date()));
 const musicProgress = ref(0);
+const showcaseLinks = computed(() => buildShowcaseLinks(posts.value, topics.value, seriesItems.value));
 let listeningClockId: number | undefined;
 let demoProgressClockId: number | undefined;
 let demoProgressSeconds = 0;
@@ -260,11 +308,15 @@ onMounted(async () => {
   updateListeningTime();
   listeningClockId = window.setInterval(updateListeningTime, 60_000);
   window.addEventListener("scroll", updatePosterScroll, { passive: true });
-  const [loadedPosts, loadedProfile] = await Promise.allSettled([
+  const [loadedPosts, loadedProfile, loadedTopics, loadedSeries] = await Promise.allSettled([
     publicApi.posts(),
-    publicApi.homeProfile()
+    publicApi.homeProfile(),
+    publicApi.topics(),
+    publicApi.seriesList()
   ]);
   posts.value = loadedPosts.status === "fulfilled" ? loadedPosts.value : [];
+  topics.value = loadedTopics.status === "fulfilled" ? loadedTopics.value : [];
+  seriesItems.value = loadedSeries.status === "fulfilled" ? loadedSeries.value : [];
   homeProfile.value = loadedProfile.status === "fulfilled" && loadedProfile.value
     ? loadedProfile.value
     : fallbackHomeProfile();

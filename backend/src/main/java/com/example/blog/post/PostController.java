@@ -39,6 +39,16 @@ public class PostController {
     postService.delete(id);
   }
 
+  @GetMapping("/api/v1/admin/posts/{id}/revisions")
+  public List<PostRevisionResponse> revisions(@PathVariable Long id) {
+    return postService.revisions(id);
+  }
+
+  @PostMapping("/api/v1/admin/posts/{id}/revisions/{revisionId}/restore")
+  public PostResponse restoreRevision(@PathVariable Long id, @PathVariable Long revisionId) {
+    return postService.restoreRevision(id, revisionId);
+  }
+
   @GetMapping("/api/v1/posts")
   public List<PostResponse> publicList(
       @RequestParam Optional<String> category,

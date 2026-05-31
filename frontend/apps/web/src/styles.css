@@ -608,6 +608,85 @@
   padding-top: clamp(42px, 6vw, 72px);
 }
 
+.home-showcase {
+  display: grid;
+  gap: 18px;
+}
+
+.home-showcase .section-head p {
+  color: var(--blue);
+  font-weight: 800;
+  margin: 0;
+  max-width: 420px;
+}
+
+.showcase-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.showcase-card {
+  background: var(--paper);
+  border: var(--line);
+  color: var(--ink);
+  display: grid;
+  gap: 10px;
+  min-height: 190px;
+  padding: 18px;
+}
+
+.showcase-card span {
+  color: var(--red);
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.showcase-card strong {
+  font-family: "Archivo Black", "Arial Black", sans-serif;
+  font-size: 28px;
+  line-height: 0.96;
+  overflow-wrap: anywhere;
+}
+
+.showcase-card p {
+  font-weight: 800;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.home-discovery {
+  display: grid;
+  gap: 18px;
+}
+
+.home-discovery-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.home-discovery-panel {
+  border: var(--line);
+  background: var(--paper);
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.home-discovery-panel h3 {
+  font-family: "Archivo Black", "Arial Black", sans-serif;
+  font-size: 34px;
+  line-height: 1;
+  margin: 0;
+}
+
+.home-discovery-links {
+  display: grid;
+  gap: 12px;
+}
+
 .section-head {
   display: flex;
   justify-content: space-between;
@@ -1166,6 +1245,45 @@
   padding: 8px 10px;
 }
 
+.article-views {
+  color: var(--blue);
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-weight: 900;
+  margin: 0;
+}
+
+.related-posts {
+  background: var(--paper-soft);
+  border: 2px solid var(--ink);
+  box-shadow: 6px 6px 0 rgba(17, 16, 13, 0.18);
+  display: grid;
+  gap: 12px;
+  margin: 24px 0 0;
+  max-width: 920px;
+  padding: 18px;
+}
+
+.related-posts h2 {
+  font-family: "Archivo Black", "Arial Black", sans-serif;
+  font-size: 24px;
+  line-height: 1;
+  margin: 0;
+}
+
+.related-posts div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.related-posts a {
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  color: #11100d;
+  font-weight: 900;
+  padding: 8px 10px;
+}
+
 .article-interactions {
   border-top: var(--line);
   display: grid;
@@ -1275,7 +1393,8 @@
 
 .comment-item p,
 .comment-empty,
-.interaction-error {
+.interaction-error,
+.interaction-notice {
   margin: 0;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
@@ -1284,6 +1403,13 @@
 .interaction-error {
   border: 2px solid var(--red);
   color: var(--red);
+  font-weight: 900;
+  padding: 10px;
+}
+
+.interaction-notice {
+  border: 2px solid var(--blue);
+  color: var(--blue);
   font-weight: 900;
   padding: 10px;
 }
@@ -1630,6 +1756,18 @@
   .music-copy h2,
   .home-about-module h2 {
     font-size: 34px;
+  }
+
+  .showcase-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-discovery-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-discovery-panel {
+    padding: 18px;
   }
 
   .about-signals li {

@@ -14,6 +14,31 @@ vi.mock("../lib/api", () => ({
       primaryTopic: { id: 1, name: "Spring Boot", slug: "spring-boot" },
       sortOrder: 0
     }]),
+    contentGovernance: vi.fn(async () => ({
+      metrics: {
+        totalPosts: 2,
+        published: 1,
+        drafts: 0,
+        scheduled: 1,
+        missingSummary: 0,
+        missingCover: 1,
+        missingTopic: 0,
+        emptyTopics: 0,
+        seriesWithIssues: 1
+      },
+      postIssues: [],
+      topicCoverage: [],
+      seriesCoverage: [{
+        id: 2,
+        name: "Build Blog",
+        slug: "build-blog",
+        postCount: 2,
+        latestPostUpdatedAt: "2026-05-30T00:00:00Z",
+        empty: false,
+        orderConflict: false,
+        missingOrders: [2]
+      }]
+    })),
     saveSeries: vi.fn(async () => ({
       id: 2,
       name: "Build Blog",
@@ -33,5 +58,7 @@ describe("SeriesView", () => {
 
     expect(wrapper.text()).toContain("Build Blog");
     expect(wrapper.text()).toContain("Spring Boot");
+    expect(wrapper.text()).toContain("2 篇文章");
+    expect(wrapper.text()).toContain("缺失章节 2");
   });
 });

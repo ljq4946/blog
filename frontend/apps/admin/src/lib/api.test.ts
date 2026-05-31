@@ -6,7 +6,7 @@ describe("adminApi comments", () => {
     vi.resetModules();
   });
 
-  it("calls admin comment list and delete endpoints", async () => {
+  it("calls admin comment list, status, and delete endpoints", async () => {
     const fetchMock = vi.fn(async () => new Response(
       JSON.stringify([]),
       { headers: { "Content-Type": "application/json" } }
@@ -15,11 +15,38 @@ describe("adminApi comments", () => {
     const { adminApi } = await import("./api");
 
     await adminApi.comments();
+    await adminApi.updateCommentStatus(7, "APPROVED");
     await adminApi.deleteComment(7);
 
     expect(fetchMock.mock.calls.map((call) => [call[0], call[1]?.method ?? "GET"])).toEqual([
       ["/api/v1/admin/comments", "GET"],
+      ["/api/v1/admin/comments/7/status", "PUT"],
       ["/api/v1/admin/comments/7", "DELETE"]
+    ]);
+  });
+
+  it("calls revision, media reference, governance, statistics, and operation log endpoints", async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      JSON.stringify([]),
+      { headers: { "Content-Type": "application/json" } }
+    ));
+    vi.stubGlobal("fetch", fetchMock);
+    const { adminApi } = await import("./api");
+
+    await adminApi.postRevisions(5);
+    await adminApi.restorePostRevision(5, 9);
+    await adminApi.mediaReferences(3);
+    await adminApi.contentGovernance();
+    await adminApi.statistics();
+    await adminApi.operationLogs();
+
+    expect(fetchMock.mock.calls.map((call) => [call[0], call[1]?.method ?? "GET"])).toEqual([
+      ["/api/v1/admin/posts/5/revisions", "GET"],
+      ["/api/v1/admin/posts/5/revisions/9/restore", "POST"],
+      ["/api/v1/admin/media/3/references", "GET"],
+      ["/api/v1/admin/content-governance", "GET"],
+      ["/api/v1/admin/statistics", "GET"],
+      ["/api/v1/admin/operation-logs", "GET"]
     ]);
   });
 

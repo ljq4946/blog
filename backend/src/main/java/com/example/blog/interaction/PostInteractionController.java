@@ -47,4 +47,9 @@ public class PostInteractionController {
   public void deleteComment(@PathVariable Long id) {
     interactions.deleteComment(id);
   }
+
+  @PutMapping("/api/v1/admin/comments/{id}/status")
+  public AdminCommentResponse updateCommentStatus(@PathVariable Long id, @RequestBody CommentStatusRequest request) {
+    return interactions.updateCommentStatus(id, request);
+  }
 }

@@ -34,6 +34,8 @@ const post: Post = {
   title: "Reader Upgrade",
   slug: "reader-upgrade",
   summary: "A better long-form reading page.",
+  seoTitle: "Long Form SEO Title",
+  seoDescription: "Search-first reading description.",
   contentHtml: "<h2>Setup Guide</h2><p>Hello reader.</p><pre><code>npm test</code></pre>",
   coverMediaUrl: "/uploads/cover.png",
   status: "PUBLISHED",
@@ -49,6 +51,8 @@ const post: Post = {
   seriesOrder: 2,
   previousSeriesPost: { id: 10, title: "Part One", slug: "part-one", seriesOrder: 1 },
   nextSeriesPost: { id: 12, title: "Part Three", slug: "part-three", seriesOrder: 3 },
+  relatedPosts: [{ id: 20, title: "Related Spring", slug: "related-spring", seriesOrder: null }],
+  viewCount: 42,
   tags: [{ id: 2, name: "Vue", slug: "vue" }],
   updatedAt: "2026-05-21T00:00:00Z"
 };
@@ -66,6 +70,7 @@ describe("PostDetailView", () => {
       id: 11,
       nickname: "Lin",
       content: "New comment",
+      status: "PENDING",
       createdAt: "2026-05-21T00:00:00Z"
     });
     likesMock.mockResolvedValue({ count: 0 });
@@ -97,6 +102,8 @@ describe("PostDetailView", () => {
     expect(wrapper.text()).toContain("Build Blog");
     expect(wrapper.text()).toContain("Part One");
     expect(wrapper.text()).toContain("Part Three");
+    expect(wrapper.text()).toContain("Related Spring");
+    expect(wrapper.text()).toContain("42 次阅读");
     expect(wrapper.text()).toContain("#Vue");
     expect(wrapper.get(".article-hero-cover").attributes("src")).toBe("/uploads/cover.png");
     expect(wrapper.text()).toContain("Setup Guide");
@@ -105,16 +112,16 @@ describe("PostDetailView", () => {
     expect(wrapper.find(".reading-preferences").exists()).toBe(true);
     expect(wrapper.find('[data-test="back-to-top"]').exists()).toBe(true);
     expect(wrapper.get('[data-test="back-to-top"]').text()).toBe("返回顶部");
-    expect(document.title).toBe("Reader Upgrade | 4946 Blog");
-    expect(document.querySelector("meta[name='description']")?.getAttribute("content")).toBe("A better long-form reading page.");
+    expect(document.title).toBe("Long Form SEO Title | 4946 Blog");
+    expect(document.querySelector("meta[name='description']")?.getAttribute("content")).toBe("Search-first reading description.");
     expect(document.querySelector("meta[property='og:image']")?.getAttribute("content")).toBe("http://localhost:5174/uploads/cover.png");
     expect(document.querySelector("meta[property='article:published_time']")?.getAttribute("content")).toBe("2026-05-20T00:00:00Z");
     expect(document.querySelector("meta[property='article:modified_time']")?.getAttribute("content")).toBe("2026-05-21T00:00:00Z");
     expect(JSON.parse(document.querySelector("script[type='application/ld+json'][data-managed='site']")?.textContent || "{}"))
       .toMatchObject({
         "@type": "BlogPosting",
-        headline: "Reader Upgrade",
-        description: "A better long-form reading page.",
+        headline: "Long Form SEO Title",
+        description: "Search-first reading description.",
         image: "http://localhost:5174/uploads/cover.png",
         datePublished: "2026-05-20T00:00:00Z",
         dateModified: "2026-05-21T00:00:00Z"
@@ -160,7 +167,8 @@ describe("PostDetailView", () => {
       email: "lin@example.com",
       content: "New comment"
     });
-    expect(wrapper.text()).toContain("New comment");
+    expect(wrapper.text()).toContain("评论已提交，审核通过后公开显示。");
+    expect(wrapper.text()).not.toContain("New comment");
   });
 
   it("likes once per browser and persists liked state locally", async () => {

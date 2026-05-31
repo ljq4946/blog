@@ -1,6 +1,10 @@
 package com.example.blog.media;
 
 import com.example.blog.TestApplicationProperties;
+import com.example.blog.post.Post;
+import com.example.blog.post.PostRepository;
+import com.example.blog.post.PostStatus;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +45,16 @@ class MediaControllerTest {
 
   @Autowired
   MockMvc mvc;
+  @Autowired
+  MediaAssetRepository media;
+  @Autowired
+  PostRepository posts;
+
+  @BeforeEach
+  void setUp() {
+    posts.deleteAll();
+    media.deleteAll();
+  }
 
   @Test
   void authenticatedAdminCanUploadListAndDeleteMedia() throws Exception {
@@ -121,6 +135,28 @@ class MediaControllerTest {
             .file(file)
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void mediaReferencesShowPostUsageAndBlockUnsafeDelete() throws Exception {
+    String token = login();
+    MediaAsset asset = media.save(new MediaAsset("cover.png", "cover.png", "/uploads/cover.png", "image/png", 128L, 80, 80));
+    Post coverPost = new Post("Cover Post", "cover-post", "Cover", "<p>Body</p>", PostStatus.PUBLISHED);
+    coverPost.setCoverMediaId(asset.getId());
+    posts.save(coverPost);
+    posts.save(new Post("Inline Post", "inline-post", "Inline", "<p><img src=\"/uploads/cover.png\"></p>", PostStatus.DRAFT));
+
+    mvc.perform(get("/api/v1/admin/media/" + asset.getId() + "/references")
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.count").value(2))
+        .andExpect(jsonPath("$.posts[0].title").value("Cover Post"))
+        .andExpect(jsonPath("$.posts[1].title").value("Inline Post"));
+
+    mvc.perform(delete("/api/v1/admin/media/" + asset.getId())
+            .header("Authorization", "Bearer " + token))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.message").value(containsString("Media is still referenced")));
   }
 
   private String login() throws Exception {

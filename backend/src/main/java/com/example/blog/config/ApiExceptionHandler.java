@@ -15,4 +15,10 @@ public class ApiExceptionHandler {
   Map<String, String> badRequest(IllegalArgumentException exception) {
     return Map.of("message", exception.getMessage());
   }
+
+  @ExceptionHandler(ConflictException.class)
+  @ResponseStatus(HttpStatus.CONFLICT)
+  Map<String, String> conflict(ConflictException exception) {
+    return Map.of("message", exception.getMessage());
+  }
 }

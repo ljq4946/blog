@@ -10,6 +10,7 @@ export const router = createRouter({
     { path: "/posts", component: () => import("../views/PostsView.vue") },
     { path: "/posts/new", component: () => import("../views/PostEditorView.vue") },
     { path: "/posts/:id", component: () => import("../views/PostEditorView.vue") },
+    { path: "/content-map", component: () => import("../views/ContentMapView.vue") },
     { path: "/home-profile", component: () => import("../views/HomeProfileView.vue") },
     { path: "/categories", component: () => import("../views/CategoriesView.vue") },
     { path: "/tags", component: () => import("../views/TagsView.vue") },

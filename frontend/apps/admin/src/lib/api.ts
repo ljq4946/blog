@@ -2,14 +2,19 @@ import {
   ApiClient,
   tokenStorage,
   type AdminComment,
+  type AdminStatistics,
   type AuthResponse,
   type Category,
+  type ContentGovernance,
   type HomeProfile,
   type HomeProfileInput,
   type MediaAsset,
+  type MediaReferences,
+  type OperationLog,
   type PageResponse,
   type Post,
   type PostInput,
+  type PostRevision,
   type Series,
   type SeriesInput,
   type SitePage,
@@ -39,6 +44,12 @@ export const adminApi = {
   },
   deletePost(id: number) {
     return api.delete(`/v1/admin/posts/${id}`);
+  },
+  postRevisions(id: number) {
+    return api.get<PostRevision[]>(`/v1/admin/posts/${id}/revisions`);
+  },
+  restorePostRevision(postId: number, revisionId: number) {
+    return api.post<Post>(`/v1/admin/posts/${postId}/revisions/${revisionId}/restore`);
   },
   categories() {
     return api.get<Category[]>("/v1/admin/categories");
@@ -91,8 +102,20 @@ export const adminApi = {
   deleteMedia(id: number) {
     return api.delete(`/v1/admin/media/${id}`);
   },
+  mediaReferences(id: number) {
+    return api.get<MediaReferences>(`/v1/admin/media/${id}/references`);
+  },
+  contentGovernance() {
+    return api.get<ContentGovernance>("/v1/admin/content-governance");
+  },
+  statistics() {
+    return api.get<AdminStatistics>("/v1/admin/statistics");
+  },
   comments() {
     return api.get<AdminComment[]>("/v1/admin/comments");
+  },
+  updateCommentStatus(id: number, status: AdminComment["status"]) {
+    return api.put<AdminComment>(`/v1/admin/comments/${id}/status`, { status });
   },
   deleteComment(id: number) {
     return api.delete(`/v1/admin/comments/${id}`);
@@ -108,5 +131,8 @@ export const adminApi = {
   },
   saveHomeProfile(profile: HomeProfileInput) {
     return api.put<HomeProfile>("/v1/admin/home-profile", profile);
+  },
+  operationLogs() {
+    return api.get<OperationLog[]>("/v1/admin/operation-logs");
   }
 };

@@ -3,6 +3,7 @@ package com.example.blog.post;
 import com.example.blog.category.Category;
 import com.example.blog.category.CategoryRepository;
 import com.example.blog.media.MediaAssetRepository;
+import com.example.blog.operation.OperationLogService;
 import com.example.blog.security.html.HtmlSanitizer;
 import com.example.blog.series.Series;
 import com.example.blog.series.SeriesRepository;
@@ -39,17 +40,22 @@ public class PostService {
   private final TopicRepository topics;
   private final SeriesRepository series;
   private final MediaAssetRepository media;
+  private final PostRevisionRepository revisions;
   private final HtmlSanitizer sanitizer;
+  private final OperationLogService operationLogs;
 
   public PostService(PostRepository posts, CategoryRepository categories, TagRepository tags,
-      TopicRepository topics, SeriesRepository series, MediaAssetRepository media, HtmlSanitizer sanitizer) {
+      TopicRepository topics, SeriesRepository series, MediaAssetRepository media,
+      PostRevisionRepository revisions, HtmlSanitizer sanitizer, OperationLogService operationLogs) {
     this.posts = posts;
     this.categories = categories;
     this.tags = tags;
     this.topics = topics;
     this.series = series;
     this.media = media;
+    this.revisions = revisions;
     this.sanitizer = sanitizer;
+    this.operationLogs = operationLogs;
   }
 
   @Transactional(readOnly = true)
@@ -59,7 +65,7 @@ public class PostService {
 
   @Transactional(readOnly = true)
   public List<PostResponse> publicList(Optional<String> categorySlug, Optional<String> tagSlug) {
-    return posts.findByStatusOrderByPublishedAtDescCreatedAtDesc(PostStatus.PUBLISHED).stream()
+    return posts.findVisibleOrderByPublishedAtDescCreatedAtDesc(Instant.now()).stream()
         .filter(post -> categorySlug.map(slug -> post.getCategory() != null && slug.equals(post.getCategory().getSlug()))
             .orElse(true))
         .filter(post -> tagSlug.map(slug -> post.getTags().stream().anyMatch(tag -> slug.equals(tag.getSlug())))
@@ -75,7 +81,7 @@ public class PostService {
         normalizedSize(request.size()),
         publicSort(request.sort()));
 
-    Specification<Post> spec = Specification.where(publishedPosts())
+    Specification<Post> spec = Specification.where(publiclyVisiblePosts(Instant.now()))
         .and(keywordMatches(request.keyword()))
         .and(publishedInYear(request.year()))
         .and(categorySlugMatches(request.category()))
@@ -86,16 +92,17 @@ public class PostService {
     return PageResponse.from(posts.findAll(spec, pageable), this::response);
   }
 
-  @Transactional(readOnly = true)
+  @Transactional
   public PostResponse publicDetail(String slug) {
-    Post post = posts.findBySlugAndStatus(slug, PostStatus.PUBLISHED)
+    Post post = posts.findVisibleBySlug(slug, Instant.now())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    post.incrementViewCount();
     return responseWithSeriesNavigation(post);
   }
 
   @Transactional(readOnly = true)
   public List<ArchiveMonth> archive() {
-    return posts.findByStatusOrderByPublishedAtDescCreatedAtDesc(PostStatus.PUBLISHED).stream()
+    return posts.findVisibleOrderByPublishedAtDescCreatedAtDesc(Instant.now()).stream()
         .collect(Collectors.groupingBy(
             post -> ARCHIVE_MONTH.format(post.getPublishedAt() == null ? post.getCreatedAt() : post.getPublishedAt()),
             LinkedHashMap::new,
@@ -110,19 +117,48 @@ public class PostService {
   public PostResponse create(PostRequest request) {
     Post post = new Post(request.title(), request.slug(), request.summary(), "", PostStatus.DRAFT);
     apply(post, request);
-    return response(posts.save(post));
+    Post saved = posts.save(post);
+    operationLogs.record("post.create", "post", saved.getId(), saved.getTitle());
+    return response(saved);
   }
 
   @Transactional
   public PostResponse update(Long id, PostRequest request) {
     Post post = posts.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    revisions.save(new PostRevision(post));
     apply(post, request);
-    return response(posts.save(post));
+    Post saved = posts.save(post);
+    operationLogs.record("post.update", "post", saved.getId(), saved.getTitle());
+    return response(saved);
   }
 
   @Transactional
   public void delete(Long id) {
     posts.deleteById(id);
+    operationLogs.record("post.delete", "post", id, "Deleted post");
+  }
+
+  @Transactional(readOnly = true)
+  public List<PostRevisionResponse> revisions(Long postId) {
+    if (!posts.existsById(postId)) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+    }
+    return revisions.findByPostIdOrderByCreatedAtDesc(postId).stream()
+        .map(PostRevisionResponse::from)
+        .toList();
+  }
+
+  @Transactional
+  public PostResponse restoreRevision(Long postId, Long revisionId) {
+    Post post = posts.findById(postId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    PostRevision revision = revisions.findById(revisionId)
+        .filter(item -> item.getPost().getId().equals(postId))
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    revisions.save(new PostRevision(post));
+    applyRevision(post, revision);
+    Post saved = posts.save(post);
+    operationLogs.record("post.revision.restore", "post", postId, revision.getTitle());
+    return response(saved);
   }
 
   private int normalizedPage(Optional<Integer> page) {
@@ -150,8 +186,12 @@ public class PostService {
     return value.map(String::trim).filter(text -> !text.isBlank());
   }
 
-  private Specification<Post> publishedPosts() {
-    return (root, query, criteria) -> criteria.equal(root.get("status"), PostStatus.PUBLISHED);
+  private Specification<Post> publiclyVisiblePosts(Instant now) {
+    return (root, query, criteria) -> criteria.or(
+        criteria.equal(root.get("status"), PostStatus.PUBLISHED),
+        criteria.and(
+            criteria.equal(root.get("status"), PostStatus.SCHEDULED),
+            criteria.lessThanOrEqualTo(root.get("publishedAt"), now)));
   }
 
   private Specification<Post> keywordMatches(Optional<String> keyword) {
@@ -213,12 +253,17 @@ public class PostService {
     post.setTitle(required(request.title(), "title"));
     post.setSlug(required(request.slug(), "slug"));
     post.setSummary(request.summary());
+    post.setSeoTitle(blankToNull(request.seoTitle()));
+    post.setSeoDescription(blankToNull(request.seoDescription()));
     post.setContentHtml(sanitizer.sanitize(request.contentHtml()));
     post.setCoverMediaId(request.coverMediaId());
     post.setStatus(request.status() == null ? PostStatus.DRAFT : request.status());
     post.setPublishedAt(request.publishedAt());
     if (post.getStatus() == PostStatus.PUBLISHED && post.getPublishedAt() == null) {
       post.setPublishedAt(Instant.now());
+    }
+    if (post.getStatus() == PostStatus.SCHEDULED && post.getPublishedAt() == null) {
+      throw new IllegalArgumentException("publishedAt is required for scheduled posts");
     }
     Category category = request.categoryId() == null ? null : categories.findById(request.categoryId())
         .orElseThrow(() -> new IllegalArgumentException("Unknown category"));
@@ -265,21 +310,84 @@ public class PostService {
     return PostResponse.from(post, coverMediaUrl(post));
   }
 
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
+  }
+
   private PostResponse responseWithSeriesNavigation(Post post) {
     SeriesPostSummary previous = null;
     SeriesPostSummary next = null;
+    Instant now = Instant.now();
     if (post.getSeries() != null && post.getSeriesOrder() != null) {
       Long seriesId = post.getSeries().getId();
-      previous = posts.findFirstBySeriesIdAndStatusAndSeriesOrderLessThanOrderBySeriesOrderDesc(
-              seriesId, PostStatus.PUBLISHED, post.getSeriesOrder())
+      previous = posts.findPreviousVisibleSeriesPosts(seriesId, post.getSeriesOrder(), now, PageRequest.of(0, 1))
+          .stream()
+          .findFirst()
           .map(SeriesPostSummary::from)
           .orElse(null);
-      next = posts.findFirstBySeriesIdAndStatusAndSeriesOrderGreaterThanOrderBySeriesOrderAsc(
-              seriesId, PostStatus.PUBLISHED, post.getSeriesOrder())
+      next = posts.findNextVisibleSeriesPosts(seriesId, post.getSeriesOrder(), now, PageRequest.of(0, 1))
+          .stream()
+          .findFirst()
           .map(SeriesPostSummary::from)
           .orElse(null);
     }
-    return PostResponse.from(post, coverMediaUrl(post), previous, next);
+    return PostResponse.from(post, coverMediaUrl(post), previous, next, relatedPosts(post, now));
+  }
+
+  private List<SeriesPostSummary> relatedPosts(Post post, Instant now) {
+    Set<Long> topicIds = post.getTopics().stream().map(Topic::getId).collect(Collectors.toSet());
+    Set<Long> tagIds = post.getTags().stream().map(Tag::getId).collect(Collectors.toSet());
+    Long seriesId = post.getSeries() == null ? null : post.getSeries().getId();
+    Long categoryId = post.getCategory() == null ? null : post.getCategory().getId();
+    return posts.findVisibleOrderByPublishedAtDescCreatedAtDesc(now).stream()
+        .filter(candidate -> !candidate.getId().equals(post.getId()))
+        .map(candidate -> new AbstractMap.SimpleEntry<>(candidate, relatedScore(candidate, topicIds, tagIds, seriesId, categoryId)))
+        .filter(entry -> entry.getValue() > 0)
+        .sorted((left, right) -> {
+          int scoreCompare = Integer.compare(right.getValue(), left.getValue());
+          if (scoreCompare != 0) {
+            return scoreCompare;
+          }
+          return Comparator.<Instant>nullsLast(Comparator.reverseOrder())
+              .compare(left.getKey().getPublishedAt(), right.getKey().getPublishedAt());
+        })
+        .limit(3)
+        .map(entry -> SeriesPostSummary.from(entry.getKey()))
+        .toList();
+  }
+
+  private int relatedScore(Post candidate, Set<Long> topicIds, Set<Long> tagIds, Long seriesId, Long categoryId) {
+    int score = 0;
+    if (seriesId != null && candidate.getSeries() != null && seriesId.equals(candidate.getSeries().getId())) {
+      score += 4;
+    }
+    score += 2 * (int) candidate.getTopics().stream().map(Topic::getId).filter(topicIds::contains).count();
+    score += (int) candidate.getTags().stream().map(Tag::getId).filter(tagIds::contains).count();
+    if (categoryId != null && candidate.getCategory() != null && categoryId.equals(candidate.getCategory().getId())) {
+      score += 1;
+    }
+    return score;
+  }
+
+  private void applyRevision(Post post, PostRevision revision) {
+    post.setTitle(revision.getTitle());
+    post.setSlug(revision.getSlug());
+    post.setSummary(revision.getSummary());
+    post.setSeoTitle(revision.getSeoTitle());
+    post.setSeoDescription(revision.getSeoDescription());
+    post.setContentHtml(revision.getContentHtml());
+    post.setCoverMediaId(revision.getCoverMediaId());
+    post.setStatus(PostStatus.valueOf(revision.getStatus()));
+    post.setPublishedAt(revision.getPublishedAt());
+    post.setCategory(revision.getCategoryId() == null ? null : categories.findById(revision.getCategoryId())
+        .orElseThrow(() -> new IllegalArgumentException("Unknown category")));
+    List<Tag> selectedTags = tags.findAllById(revision.tagIds());
+    post.setTags(new HashSet<>(selectedTags));
+    List<Topic> selectedTopics = topics.findAllById(revision.topicIds());
+    post.setTopics(new HashSet<>(selectedTopics));
+    post.setSeries(revision.getSeriesId() == null ? null : series.findById(revision.getSeriesId())
+        .orElseThrow(() -> new IllegalArgumentException("Unknown series")));
+    post.setSeriesOrder(revision.getSeriesOrder());
   }
 
   private String coverMediaUrl(Post post) {

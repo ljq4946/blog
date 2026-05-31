@@ -25,12 +25,42 @@
         <el-form-item label="状态">
           <el-select :model-value="form.status" @update:model-value="updateField('status', $event)">
             <el-option label="草稿" value="DRAFT" />
+            <el-option label="已排期" value="SCHEDULED" />
             <el-option label="已发布" value="PUBLISHED" />
           </el-select>
         </el-form-item>
 
+        <el-form-item label="发布时间 / 排期">
+          <el-date-picker
+            :model-value="form.publishedAt"
+            type="datetime"
+            value-format="YYYY-MM-DDTHH:mm:ss[Z]"
+            placeholder="选择发布时间"
+            @update:model-value="updateField('publishedAt', $event ?? null)"
+          />
+        </el-form-item>
+
         <el-form-item label="URL 标识">
           <el-input aria-label="URL 标识" :model-value="form.slug" @update:model-value="updateField('slug', $event)" />
+          <p class="canonical-preview">Canonical: /posts/{{ form.slug || "未设置" }}</p>
+        </el-form-item>
+
+        <el-form-item label="SEO 标题">
+          <input
+            data-test="seo-title"
+            :value="form.seoTitle"
+            maxlength="220"
+            @input="updateField('seoTitle', ($event.target as HTMLInputElement).value)"
+          />
+        </el-form-item>
+
+        <el-form-item label="SEO 描述">
+          <textarea
+            data-test="seo-description"
+            :value="form.seoDescription"
+            rows="2"
+            @input="updateField('seoDescription', ($event.target as HTMLTextAreaElement).value)"
+          ></textarea>
         </el-form-item>
 
         <el-form-item label="摘要">
@@ -48,12 +78,14 @@
         </el-form-item>
 
         <el-form-item label="分类">
+          <el-button data-test="quick-category" class="quick-create" size="small" @click="emit('quick-create', 'category')">新建分类</el-button>
           <el-select :model-value="form.categoryId" clearable placeholder="选择分类" @update:model-value="updateField('categoryId', $event)">
             <el-option v-for="category in categories" :key="category.id" :label="category.name" :value="category.id" />
           </el-select>
         </el-form-item>
 
         <el-form-item label="专题">
+          <el-button data-test="quick-topic" class="quick-create" size="small" @click="emit('quick-create', 'topic')">新建专题</el-button>
           <el-select :model-value="form.topicIds" multiple placeholder="选择专题" @update:model-value="updateField('topicIds', $event)">
             <el-option v-for="topic in topics" :key="topic.id" :label="topic.name" :value="topic.id" />
           </el-select>
@@ -74,6 +106,7 @@
         </el-form-item>
 
         <el-form-item label="标签">
+          <el-button data-test="quick-tag" class="quick-create" size="small" @click="emit('quick-create', 'tag')">新建标签</el-button>
           <el-select :model-value="form.tagIds" multiple placeholder="选择标签" @update:model-value="updateField('tagIds', $event)">
             <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id" />
           </el-select>
@@ -104,6 +137,7 @@ const emit = defineEmits<{
   "update:form": [form: PostForm];
   "restore-recovery": [];
   "discard-recovery": [];
+  "quick-create": [type: "category" | "tag" | "topic"];
 }>();
 
 function checkStateText(check: PublishCheck) {
@@ -191,6 +225,35 @@ function updateField<K extends keyof PostForm>(key: K, value: PostForm[K]) {
 
 .publish-form :deep(.el-form-item) {
   margin-bottom: 14px;
+}
+
+.canonical-preview {
+  color: var(--blue);
+  font-family: "IBM Plex Mono", "Consolas", monospace;
+  font-size: 12px;
+  font-weight: 800;
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.quick-create {
+  margin: 0 0 8px;
+}
+
+.publish-form input,
+.publish-form textarea {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  min-height: 36px;
+  padding: 7px 9px;
+  width: 100%;
+}
+
+.publish-form textarea {
+  resize: vertical;
 }
 
 .cover-preview {

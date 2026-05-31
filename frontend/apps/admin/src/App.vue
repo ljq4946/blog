@@ -8,6 +8,7 @@
       </RouterLink>
       <nav>
         <RouterLink to="/posts">文章</RouterLink>
+        <RouterLink to="/content-map">内容地图</RouterLink>
         <RouterLink to="/home-profile">首页</RouterLink>
         <RouterLink to="/categories">分类</RouterLink>
         <RouterLink to="/tags">标签</RouterLink>

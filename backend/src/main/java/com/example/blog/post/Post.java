@@ -27,6 +27,12 @@ public class Post {
   @Column(columnDefinition = "TEXT")
   private String summary;
 
+  @Column(name = "seo_title")
+  private String seoTitle;
+
+  @Column(name = "seo_description", columnDefinition = "TEXT")
+  private String seoDescription;
+
   @Column(name = "content_html", columnDefinition = "LONGTEXT")
   private String contentHtml;
 
@@ -73,6 +79,9 @@ public class Post {
 
   @Column(name = "like_count", nullable = false)
   private long likeCount = 0;
+
+  @Column(name = "view_count", nullable = false)
+  private long viewCount = 0;
 
   protected Post() {
   }
@@ -123,6 +132,22 @@ public class Post {
 
   public void setSummary(String summary) {
     this.summary = summary;
+  }
+
+  public String getSeoTitle() {
+    return seoTitle;
+  }
+
+  public void setSeoTitle(String seoTitle) {
+    this.seoTitle = seoTitle;
+  }
+
+  public String getSeoDescription() {
+    return seoDescription;
+  }
+
+  public void setSeoDescription(String seoDescription) {
+    this.seoDescription = seoDescription;
   }
 
   public String getContentHtml() {
@@ -207,5 +232,13 @@ public class Post {
 
   public long getLikeCount() {
     return likeCount;
+  }
+
+  public long getViewCount() {
+    return viewCount;
+  }
+
+  public void incrementViewCount() {
+    viewCount += 1;
   }
 }

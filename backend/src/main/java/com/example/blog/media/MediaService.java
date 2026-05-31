@@ -1,6 +1,10 @@
 package com.example.blog.media;
 
 import com.example.blog.config.UploadProperties;
+import com.example.blog.config.ConflictException;
+import com.example.blog.operation.OperationLogService;
+import com.example.blog.post.Post;
+import com.example.blog.post.PostRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -16,6 +20,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -43,10 +50,15 @@ public class MediaService {
 
   private final MediaAssetRepository media;
   private final UploadProperties uploadProperties;
+  private final PostRepository posts;
+  private final OperationLogService operationLogs;
 
-  public MediaService(MediaAssetRepository media, UploadProperties uploadProperties) {
+  public MediaService(MediaAssetRepository media, UploadProperties uploadProperties,
+      PostRepository posts, OperationLogService operationLogs) {
     this.media = media;
     this.uploadProperties = uploadProperties;
+    this.posts = posts;
+    this.operationLogs = operationLogs;
   }
 
   @Transactional(readOnly = true)
@@ -72,7 +84,7 @@ public class MediaService {
       Files.copy(input, destination, StandardCopyOption.REPLACE_EXISTING);
     }
     Dimensions dimensions = dimensions(destination, mimeType);
-    return media.save(new MediaAsset(
+    MediaAsset saved = media.save(new MediaAsset(
         originalName,
         storedName,
         "/uploads/" + storedName,
@@ -80,13 +92,32 @@ public class MediaService {
         file.getSize(),
         dimensions.width(),
         dimensions.height()));
+    operationLogs.record("media.upload", "media", saved.getId(), saved.getOriginalName());
+    return saved;
   }
 
   @Transactional
   public void delete(Long id) throws IOException {
     MediaAsset asset = media.findById(id).orElseThrow();
+    MediaReferences references = references(id);
+    if (references.count() > 0) {
+      throw new ConflictException("Media is still referenced by posts");
+    }
     media.delete(asset);
     Files.deleteIfExists(Path.of(uploadProperties.getDir()).toAbsolutePath().normalize().resolve(asset.getStoredName()));
+    operationLogs.record("media.delete", "media", id, asset.getOriginalName());
+  }
+
+  @Transactional(readOnly = true)
+  public MediaReferences references(Long id) {
+    MediaAsset asset = media.findById(id).orElseThrow();
+    Map<Long, MediaPostReference> references = new LinkedHashMap<>();
+    posts.findByCoverMediaIdOrderByTitleAsc(id).forEach(post ->
+        references.put(post.getId(), MediaPostReference.from(post, "cover")));
+    posts.findByContentHtmlContainingOrderByTitleAsc(asset.getUrl()).forEach(post ->
+        references.putIfAbsent(post.getId(), MediaPostReference.from(post, "content")));
+    List<MediaPostReference> postReferences = references.values().stream().toList();
+    return new MediaReferences(postReferences.size(), postReferences);
   }
 
   private String extension(String filename) {
@@ -106,5 +137,14 @@ public class MediaService {
   }
 
   private record Dimensions(Integer width, Integer height) {
+  }
+
+  public record MediaReferences(int count, List<MediaPostReference> posts) {
+  }
+
+  public record MediaPostReference(Long id, String title, String slug, String referenceType) {
+    static MediaPostReference from(Post post, String referenceType) {
+      return new MediaPostReference(post.getId(), post.getTitle(), post.getSlug(), referenceType);
+    }
   }
 }

@@ -15,6 +15,17 @@ describe("post form validation", () => {
     expect(validatePostForm({ title: "Hello", slug: "hello", status: "PUBLISHED", tagIds: [] })).toEqual([]);
   });
 
+  it("requires a future publish time for scheduled posts", () => {
+    expect(validatePostForm({
+      title: "Scheduled",
+      slug: "scheduled",
+      status: "SCHEDULED",
+      tagIds: [],
+      topicIds: [],
+      publishedAt: null
+    })).toContain("请选择排期发布时间");
+  });
+
   it("counts Chinese characters, latin letters, and digits from editor HTML", () => {
     expect(wordCountFromHtml("<p>\u4f60\u597d world</p><p>Vue 3</p>")).toBe(11);
     expect(wordCountFromHtml("<p>111\u4e0a\u5347abc123\u8d8b\u52bf</p>")).toBe(13);
@@ -83,6 +94,8 @@ describe("publishChecklist", () => {
     expect(checks.filter((check) => check.level === "recommended" && !check.passed).map((check) => check.key)).toEqual([
       "summary",
       "category",
+      "topic",
+      "seo",
       "tags",
       "cover"
     ]);
@@ -97,6 +110,9 @@ describe("publishChecklist", () => {
       coverMediaId: 7,
       status: "DRAFT",
       categoryId: 1,
+      topicIds: [3],
+      seoTitle: "Readable SEO",
+      seoDescription: "Search-ready summary",
       tagIds: [2]
     });
 
@@ -104,7 +120,17 @@ describe("publishChecklist", () => {
   });
 
   it("normalizes form input before submit", () => {
-    expect(toPostInput({ title: "  Ready  ", slug: "ready", status: "DRAFT", tagIds: [] }).title).toBe("Ready");
+    const input = toPostInput({
+      title: "  Ready  ",
+      slug: "ready",
+      status: "DRAFT",
+      tagIds: [],
+      seoTitle: "  SEO Ready  ",
+      seoDescription: "  Description  "
+    });
+    expect(input.title).toBe("Ready");
+    expect(input.seoTitle).toBe("SEO Ready");
+    expect(input.seoDescription).toBe("Description");
   });
 
   it("serializes topic and series fields for post submit", () => {

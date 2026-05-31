@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+
+- No unreleased changes.
+
+## 1.6.0 - 2026-05-30
+
+- Add a public homepage portfolio path that reuses the latest article, first topic, first series, and archive entry.
+- Keep project showcase scope inside the existing article/topic/series model instead of adding a separate project module.
+- Raise backend, admin, web, and shared package versions to `1.6.0`.
+
+## 1.5.0 - 2026-05-30
+
+- Add admin writing templates for project cases, technical notes, and release reviews.
+- Add an admin statistics snapshot for views, likes, comment status counts, and popular posts.
+- Surface lightweight feedback metrics on the admin dashboard.
+
+## 1.4.0 - 2026-05-30
+
+- Start the 1.4 content governance track with an admin governance snapshot API for post gaps, topic coverage, and series maintenance signals.
+- Surface content governance metrics on the admin dashboard, topic management page, and series management page.
+- Add an admin content map page that turns governance signals into topic, series, and article maintenance actions.
+- Refresh the public homepage discovery area with latest posts, featured topics, ongoing series, and an archive entry.
+
+## 1.3.0 - 2026-05-30
+
+- Add scheduled publishing with `SCHEDULED` posts hidden from public surfaces until `publishedAt`.
+- Add post SEO title and description fields, server-side post revisions, related posts, and lightweight view counts.
+- Upgrade the admin author workflow with article filtering, SEO/canonical publishing controls, revision restore, quick taxonomy creation, media previews, media reference checks, and comment approval states.
+- Extend health checks with database/upload status and add operation logs for key authoring actions.
+- Raise backend, admin, web, and shared package versions to `1.3.0`.
+
 ## 1.2.0 - 2026-05-30
 
 - Add flat topics for durable technical knowledge maps.

@@ -2,7 +2,6 @@ package com.example.blog.topic;
 
 import com.example.blog.post.Post;
 import com.example.blog.post.PostRepository;
-import com.example.blog.post.PostStatus;
 import com.example.blog.series.Series;
 import com.example.blog.series.SeriesRepository;
 import jakarta.validation.Valid;
@@ -11,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -37,7 +37,7 @@ public class TopicController {
     return new TopicDetailResponse(
         TopicResponse.from(topic),
         series.findByPrimaryTopicSlugOrderBySortOrderAscNameAsc(slug).stream().map(SeriesSummary::from).toList(),
-        posts.findByTopicsSlugAndStatusOrderByPublishedAtDescCreatedAtDesc(slug, PostStatus.PUBLISHED)
+        posts.findVisibleByTopicsSlugOrderByPublishedAtDescCreatedAtDesc(slug, Instant.now())
             .stream()
             .map(PostSummary::from)
             .toList());

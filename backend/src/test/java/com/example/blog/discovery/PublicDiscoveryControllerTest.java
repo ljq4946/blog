@@ -103,7 +103,9 @@ class PublicDiscoveryControllerTest {
 
     mvc.perform(get("/health"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.status").value("UP"));
+        .andExpect(jsonPath("$.status").value("UP"))
+        .andExpect(jsonPath("$.database").value("UP"))
+        .andExpect(jsonPath("$.uploads").value("UP"));
   }
 
   @Test

@@ -26,6 +26,10 @@ public class PostComment {
   @Column(nullable = false, columnDefinition = "TEXT")
   private String content;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private CommentStatus status = CommentStatus.PENDING;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
@@ -62,6 +66,14 @@ public class PostComment {
 
   public String getContent() {
     return content;
+  }
+
+  public CommentStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(CommentStatus status) {
+    this.status = status;
   }
 
   public Instant getCreatedAt() {

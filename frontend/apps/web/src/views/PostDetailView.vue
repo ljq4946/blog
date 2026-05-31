@@ -11,6 +11,7 @@
       </div>
       <h1>{{ post.title }}</h1>
       <p v-if="post.summary" class="summary">{{ post.summary }}</p>
+      <p class="article-views">{{ post.viewCount ?? 0 }} 次阅读</p>
       <img v-if="post.coverMediaUrl" class="article-hero-cover" :src="post.coverMediaUrl" :alt="post.title" />
     </header>
 
@@ -36,6 +37,15 @@
       </div>
     </nav>
 
+    <section v-if="post.relatedPosts?.length" class="related-posts" aria-label="相关文章">
+      <h2>相关文章</h2>
+      <div>
+        <RouterLink v-for="item in post.relatedPosts" :key="item.id" :to="`/posts/${item.slug}`">
+          {{ item.title }}
+        </RouterLink>
+      </div>
+    </section>
+
     <section class="article-interactions" aria-label="文章互动">
       <div class="like-panel">
         <div>
@@ -53,6 +63,7 @@
           <span>{{ comments.length }} 条</span>
         </div>
         <p v-if="interactionError" class="interaction-error">{{ interactionError }}</p>
+        <p v-if="commentNotice" class="interaction-notice">{{ commentNotice }}</p>
         <ol v-if="comments.length" class="comment-list">
           <li v-for="comment in comments" :key="comment.id" class="comment-item">
             <div class="comment-meta">
@@ -117,6 +128,7 @@ const liked = ref(false);
 const liking = ref(false);
 const commentSubmitting = ref(false);
 const interactionError = ref("");
+const commentNotice = ref("");
 const commentForm = reactive({
   nickname: "",
   email: "",
@@ -173,13 +185,18 @@ async function submitComment() {
 
   commentSubmitting.value = true;
   interactionError.value = "";
+  commentNotice.value = "";
   try {
     const created = await publicApi.createComment(post.value.slug, {
       nickname,
       email: email || null,
       content
     });
-    comments.value = [...comments.value, created];
+    if (created.status === "APPROVED") {
+      comments.value = [...comments.value, created];
+    } else {
+      commentNotice.value = "评论已提交，审核通过后公开显示。";
+    }
     commentForm.content = "";
   } catch {
     interactionError.value = "评论提交失败，请稍后重试。";
@@ -224,9 +241,11 @@ onMounted(async () => {
   const slug = String(route.params.slug);
   try {
     post.value = await publicApi.post(slug);
+    const metadataTitle = post.value.seoTitle || post.value.title;
+    const metadataDescription = post.value.seoDescription || post.value.summary;
     applySiteMetadata({
-      title: post.value.title,
-      description: post.value.summary,
+      title: metadataTitle,
+      description: metadataDescription,
       path: `/posts/${post.value.slug}`,
       image: post.value.coverMediaUrl,
       publishedTime: post.value.publishedAt,
@@ -234,8 +253,8 @@ onMounted(async () => {
       structuredData: {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
-        headline: post.value.title,
-        description: post.value.summary,
+        headline: metadataTitle,
+        description: metadataDescription,
         image: post.value.coverMediaUrl ? absoluteUrl(post.value.coverMediaUrl) : undefined,
         datePublished: post.value.publishedAt,
         dateModified: post.value.updatedAt ?? post.value.publishedAt,

@@ -22,6 +22,8 @@ public final class PostDtos {
       String title,
       String slug,
       String summary,
+      String seoTitle,
+      String seoDescription,
       String contentHtml,
       Long coverMediaId,
       PostStatus status,
@@ -38,6 +40,8 @@ public final class PostDtos {
       String title,
       String slug,
       String summary,
+      String seoTitle,
+      String seoDescription,
       String contentHtml,
       Long coverMediaId,
       String coverMediaUrl,
@@ -48,7 +52,9 @@ public final class PostDtos {
       Integer seriesOrder,
       SeriesPostSummary previousSeriesPost,
       SeriesPostSummary nextSeriesPost,
+      List<SeriesPostSummary> relatedPosts,
       List<TagSummary> tags,
+      long viewCount,
       Instant createdAt,
       Instant updatedAt,
       Instant publishedAt) {
@@ -65,11 +71,22 @@ public final class PostDtos {
         String coverMediaUrl,
         SeriesPostSummary previousSeriesPost,
         SeriesPostSummary nextSeriesPost) {
+      return from(post, coverMediaUrl, previousSeriesPost, nextSeriesPost, List.of());
+    }
+
+    public static PostResponse from(
+        Post post,
+        String coverMediaUrl,
+        SeriesPostSummary previousSeriesPost,
+        SeriesPostSummary nextSeriesPost,
+        List<SeriesPostSummary> relatedPosts) {
       return new PostResponse(
           post.getId(),
           post.getTitle(),
           post.getSlug(),
           post.getSummary(),
+          post.getSeoTitle(),
+          post.getSeoDescription(),
           post.getContentHtml(),
           post.getCoverMediaId(),
           coverMediaUrl,
@@ -83,10 +100,12 @@ public final class PostDtos {
           post.getSeriesOrder(),
           previousSeriesPost,
           nextSeriesPost,
+          relatedPosts,
           post.getTags().stream()
               .sorted(Comparator.comparing(Tag::getName))
               .map(TagSummary::from)
               .toList(),
+          post.getViewCount(),
           post.getCreatedAt(),
           post.getUpdatedAt(),
           post.getPublishedAt());
@@ -156,5 +175,45 @@ public final class PostDtos {
       Optional<Integer> page,
       Optional<Integer> size,
       Optional<String> sort) {
+  }
+
+  public record PostRevisionResponse(
+      Long id,
+      Long postId,
+      String title,
+      String slug,
+      String summary,
+      String seoTitle,
+      String seoDescription,
+      String contentHtml,
+      Long coverMediaId,
+      String status,
+      Long categoryId,
+      List<Long> topicIds,
+      Long seriesId,
+      Integer seriesOrder,
+      List<Long> tagIds,
+      Instant publishedAt,
+      Instant createdAt) {
+    static PostRevisionResponse from(PostRevision revision) {
+      return new PostRevisionResponse(
+          revision.getId(),
+          revision.getPost().getId(),
+          revision.getTitle(),
+          revision.getSlug(),
+          revision.getSummary(),
+          revision.getSeoTitle(),
+          revision.getSeoDescription(),
+          revision.getContentHtml(),
+          revision.getCoverMediaId(),
+          revision.getStatus(),
+          revision.getCategoryId(),
+          revision.topicIds(),
+          revision.getSeriesId(),
+          revision.getSeriesOrder(),
+          revision.tagIds(),
+          revision.getPublishedAt(),
+          revision.getCreatedAt());
+    }
   }
 }

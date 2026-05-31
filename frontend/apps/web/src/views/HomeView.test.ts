@@ -1,15 +1,19 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import type { Post } from "@blog/shared";
+import type { Post, Series, Topic } from "@blog/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import HomeView from "./HomeView.vue";
 
 const postsMock = vi.hoisted(() => vi.fn());
 const homeProfileMock = vi.hoisted(() => vi.fn());
+const topicsMock = vi.hoisted(() => vi.fn());
+const seriesListMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../lib/api", () => ({
   publicApi: {
     posts: postsMock,
-    homeProfile: homeProfileMock
+    homeProfile: homeProfileMock,
+    topics: topicsMock,
+    seriesList: seriesListMock
   }
 }));
 
@@ -20,6 +24,8 @@ describe("HomeView", () => {
     vi.unstubAllGlobals();
     postsMock.mockReset();
     homeProfileMock.mockReset();
+    topicsMock.mockReset();
+    seriesListMock.mockReset();
     homeProfileMock.mockResolvedValue({
       key: "home",
       musicTitle: "私人电台",
@@ -36,6 +42,8 @@ describe("HomeView", () => {
       ],
       updatedAt: "2026-05-24T00:00:00Z"
     });
+    topicsMock.mockResolvedValue([]);
+    seriesListMock.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -371,5 +379,108 @@ describe("HomeView", () => {
     expect(wrapper.text()).not.toContain("Post 4");
     expect(wrapper.text()).not.toContain("Post 5");
     expect(wrapper.text()).not.toContain("Post 6");
+  });
+
+  it("refreshes homepage discovery with topics, ongoing series, and an archive entry", async () => {
+    postsMock.mockResolvedValue(
+      Array.from({ length: 4 }, (_, index): Post => ({
+        id: index + 1,
+        title: `Post ${index + 1}`,
+        slug: `post-${index + 1}`,
+        summary: `Summary ${index + 1}`,
+        status: "PUBLISHED",
+        publishedAt: `2026-05-${20 - index}T00:00:00Z`
+      }))
+    );
+    topicsMock.mockResolvedValue([
+      { id: 1, name: "Spring Boot", slug: "spring-boot", description: "Backend practice", sortOrder: 0 },
+      { id: 2, name: "Vue", slug: "vue", description: "Frontend notes", sortOrder: 1 },
+      { id: 3, name: "Ops", slug: "ops", description: "", sortOrder: 2 },
+      { id: 4, name: "Postgres", slug: "postgres", description: "Database", sortOrder: 3 }
+    ] satisfies Topic[]);
+    seriesListMock.mockResolvedValue([
+      {
+        id: 1,
+        name: "Build Blog",
+        slug: "build-blog",
+        description: "Ship a modular blog",
+        primaryTopic: { id: 1, name: "Spring Boot", slug: "spring-boot" },
+        sortOrder: 0
+      },
+      { id: 2, name: "Reader UX", slug: "reader-ux", description: "Reading flow", primaryTopic: null, sortOrder: 1 },
+      { id: 3, name: "Deploy Notes", slug: "deploy-notes", description: "", primaryTopic: null, sortOrder: 2 },
+      { id: 4, name: "Database Diary", slug: "database-diary", description: "", primaryTopic: null, sortOrder: 3 }
+    ] satisfies Series[]);
+
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ["to"],
+            template: "<a :href=\"typeof to === 'string' ? to : to.path\"><slot /></a>"
+          }
+        }
+      }
+    });
+    await flushPromises();
+
+    const discovery = wrapper.get("[data-test='home-discovery']");
+    expect(discovery.text()).toContain("重点专题");
+    expect(discovery.text()).toContain("Spring Boot");
+    expect(discovery.text()).toContain("Vue");
+    expect(discovery.text()).toContain("Ops");
+    expect(discovery.text()).not.toContain("Postgres");
+    expect(discovery.text()).toContain("进行中的系列");
+    expect(discovery.text()).toContain("Build Blog");
+    expect(discovery.text()).toContain("Reader UX");
+    expect(discovery.text()).toContain("Deploy Notes");
+    expect(discovery.text()).not.toContain("Database Diary");
+    expect(discovery.find("a[href='/topics/spring-boot']").exists()).toBe(true);
+    expect(discovery.find("a[href='/series/build-blog']").exists()).toBe(true);
+    expect(discovery.find("a[href='/archive']").exists()).toBe(true);
+  });
+
+  it("renders a portfolio showcase path from existing content structures", async () => {
+    postsMock.mockResolvedValue([
+      {
+        id: 1,
+        title: "Full Stack Blog",
+        slug: "full-stack-blog",
+        summary: "A production-style personal blog case.",
+        status: "PUBLISHED",
+        publishedAt: "2026-05-30T00:00:00Z"
+      }
+    ] satisfies Post[]);
+    topicsMock.mockResolvedValue([
+      { id: 2, name: "Spring Boot", slug: "spring-boot", description: "Backend knowledge map", sortOrder: 0 }
+    ] satisfies Topic[]);
+    seriesListMock.mockResolvedValue([
+      { id: 3, name: "Build From Zero", slug: "build-from-zero", description: "Ordered implementation notes", primaryTopic: null, sortOrder: 0 }
+    ] satisfies Series[]);
+
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ["to"],
+            template: "<a :href=\"typeof to === 'string' ? to : to.path\"><slot /></a>"
+          }
+        }
+      }
+    });
+    await flushPromises();
+
+    const showcase = wrapper.get("[data-test='home-showcase']");
+    expect(showcase.text()).toContain("作品集路径");
+    expect(showcase.text()).toContain("代表文章");
+    expect(showcase.text()).toContain("Full Stack Blog");
+    expect(showcase.text()).toContain("技术专题");
+    expect(showcase.text()).toContain("Spring Boot");
+    expect(showcase.text()).toContain("阅读系列");
+    expect(showcase.text()).toContain("Build From Zero");
+    expect(showcase.find("a[href='/posts/full-stack-blog']").exists()).toBe(true);
+    expect(showcase.find("a[href='/topics/spring-boot']").exists()).toBe(true);
+    expect(showcase.find("a[href='/series/build-from-zero']").exists()).toBe(true);
+    expect(showcase.find("a[href='/archive']").exists()).toBe(true);
   });
 });

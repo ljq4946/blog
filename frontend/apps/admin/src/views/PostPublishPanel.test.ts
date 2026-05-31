@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import ElementPlus, { ElInputNumber, ElSelect } from "element-plus";
+import ElementPlus, { ElDatePicker, ElInputNumber, ElSelect } from "element-plus";
 import { describe, expect, it } from "vitest";
 import PostPublishPanel from "./PostPublishPanel.vue";
 import type { Category, MediaAsset, Series, Tag, Topic } from "@blog/shared";
@@ -9,6 +9,8 @@ const form: PostForm = {
   title: "标题样例",
   slug: "sample-title",
   summary: "",
+  seoTitle: "SEO 标题",
+  seoDescription: "SEO 描述",
   contentHtml: "",
   coverMediaId: 7,
   status: "DRAFT",
@@ -79,6 +81,8 @@ describe("PostPublishPanel", () => {
     expect(wrapper.text()).toContain("正文");
     expect(wrapper.text()).toContain("专题");
     expect(wrapper.text()).toContain("系列");
+    expect(wrapper.text()).toContain("SEO 标题");
+    expect(wrapper.text()).toContain("Canonical");
     expect(wrapper.text()).toContain("建议完善");
     expect(wrapper.find('[data-test="restore-recovery"]').exists()).toBe(true);
     expect(wrapper.find('[data-test="discard-recovery"]').exists()).toBe(true);
@@ -97,12 +101,17 @@ describe("PostPublishPanel", () => {
   it("emits merged form updates when publish fields change", async () => {
     const wrapper = mountPanel();
     const selects = wrapper.findAllComponents(ElSelect);
+    const datePickers = wrapper.findAllComponents(ElDatePicker);
     const slugInput = wrapper.find('input[aria-label="URL 标识"]');
 
     expect(slugInput.exists()).toBe(true);
 
     await slugInput.setValue("updated-title");
+    await wrapper.find('[data-test="seo-title"]').setValue("Updated SEO");
+    await wrapper.find('[data-test="seo-description"]').setValue("Updated SEO description");
     await selects[0].vm.$emit("update:modelValue", "PUBLISHED");
+    await selects[0].vm.$emit("update:modelValue", "SCHEDULED");
+    await datePickers[0].vm.$emit("update:modelValue", "2026-06-01T08:00:00Z");
     await selects[3].vm.$emit("update:modelValue", [3]);
     await selects[4].vm.$emit("update:modelValue", 4);
     await wrapper.findComponent(ElInputNumber).vm.$emit("update:modelValue", 2);
@@ -110,11 +119,25 @@ describe("PostPublishPanel", () => {
 
     expect(wrapper.emitted("update:form")).toEqual([
       [{ ...form, slug: "updated-title" }],
+      [{ ...form, seoTitle: "Updated SEO" }],
+      [{ ...form, seoDescription: "Updated SEO description" }],
       [{ ...form, status: "PUBLISHED" }],
+      [{ ...form, status: "SCHEDULED" }],
+      [{ ...form, publishedAt: "2026-06-01T08:00:00Z" }],
       [{ ...form, topicIds: [3] }],
       [{ ...form, seriesId: 4 }],
       [{ ...form, seriesOrder: 2 }],
       [{ ...form, tagIds: [2, 3] }]
     ]);
+  });
+
+  it("emits quick-create requests from taxonomy fields", async () => {
+    const wrapper = mountPanel();
+
+    await wrapper.find('[data-test="quick-category"]').trigger("click");
+    await wrapper.find('[data-test="quick-tag"]').trigger("click");
+    await wrapper.find('[data-test="quick-topic"]').trigger("click");
+
+    expect(wrapper.emitted("quick-create")).toEqual([["category"], ["tag"], ["topic"]]);
   });
 });

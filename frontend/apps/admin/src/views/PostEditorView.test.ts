@@ -18,6 +18,11 @@ const tagsMock = vi.hoisted(() => vi.fn());
 const topicsMock = vi.hoisted(() => vi.fn());
 const seriesMock = vi.hoisted(() => vi.fn());
 const mediaMock = vi.hoisted(() => vi.fn());
+const postRevisionsMock = vi.hoisted(() => vi.fn());
+const restorePostRevisionMock = vi.hoisted(() => vi.fn());
+const saveCategoryMock = vi.hoisted(() => vi.fn());
+const saveTagMock = vi.hoisted(() => vi.fn());
+const saveTopicMock = vi.hoisted(() => vi.fn());
 const now = Date.parse("2026-05-19T12:00:00Z");
 const editorState = vi.hoisted(() => ({
   selection: {
@@ -75,7 +80,12 @@ vi.mock("../lib/api", () => ({
     tags: tagsMock,
     topics: topicsMock,
     series: seriesMock,
-    media: mediaMock
+    media: mediaMock,
+    postRevisions: postRevisionsMock,
+    restorePostRevision: restorePostRevisionMock,
+    saveCategory: saveCategoryMock,
+    saveTag: saveTagMock,
+    saveTopic: saveTopicMock
   }
 }));
 
@@ -139,6 +149,11 @@ describe("PostEditorView", () => {
     updatePostMock.mockReset();
     topicsMock.mockReset();
     seriesMock.mockReset();
+    postRevisionsMock.mockReset();
+    restorePostRevisionMock.mockReset();
+    saveCategoryMock.mockReset();
+    saveTagMock.mockReset();
+    saveTopicMock.mockReset();
     editorState.selection.empty = true;
     editorState.selection.from = 0;
     editorState.selection.to = 0;
@@ -171,6 +186,11 @@ describe("PostEditorView", () => {
       totalElements: 1,
       totalPages: 1
     });
+    postRevisionsMock.mockResolvedValue([]);
+    restorePostRevisionMock.mockResolvedValue({});
+    saveCategoryMock.mockResolvedValue({ id: 8, name: "New Category", slug: "new-category", sortOrder: 1 });
+    saveTagMock.mockResolvedValue({ id: 9, name: "New Tag", slug: "new-tag" });
+    saveTopicMock.mockResolvedValue({ id: 10, name: "New Topic", slug: "new-topic", sortOrder: 1 });
     vi.stubGlobal("confirm", vi.fn(() => true));
     vi.stubGlobal("prompt", vi.fn(() => "https://example.com/image.png"));
   });
@@ -196,6 +216,8 @@ describe("PostEditorView", () => {
           title: "Recovered title",
           slug: "recovered-title",
           summary: "Recovered summary",
+          seoTitle: "",
+          seoDescription: "",
           contentHtml: "<p>Recovered content</p>",
           coverMediaId: null,
           status: "DRAFT",
@@ -225,6 +247,25 @@ describe("PostEditorView", () => {
     expect(wrapper.find('button[aria-label="斜体"]').exists()).toBe(true);
     expect(wrapper.find('button[aria-label="二级标题"]').exists()).toBe(true);
     expect(wrapper.find('button[aria-label="撤销"]').exists()).toBe(true);
+  });
+
+  it("applies a writing template to the current draft", async () => {
+    const wrapper = mountEditor();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("写作模板");
+    expect(wrapper.text()).toContain("项目案例");
+    expect(wrapper.text()).toContain("技术笔记");
+    expect(wrapper.text()).toContain("版本复盘");
+
+    await wrapper.find('[data-test="template-project-case"]').trigger("click");
+    await flushPromises();
+
+    expect(editorChain.setContent).toHaveBeenCalledWith(expect.stringContaining("实现路径"));
+    expect(wrapper.findComponent(PostPublishPanel).props("form")).toMatchObject({
+      summary: expect.stringContaining("项目背景"),
+      contentHtml: expect.stringContaining("结果")
+    });
   });
 
   it("renders the writing workbench with the publish panel", async () => {
@@ -261,6 +302,8 @@ describe("PostEditorView", () => {
         title: "Series title",
         slug: "series-title",
         summary: "Series summary",
+        seoTitle: "Series SEO",
+        seoDescription: "Series SEO description",
         contentHtml: "<p>Series body</p>",
         coverMediaId: null,
         status: "DRAFT",
@@ -279,7 +322,9 @@ describe("PostEditorView", () => {
     expect(wrapper.findComponent(PostPublishPanel).props("form")).toMatchObject({
       topicIds: [3],
       seriesId: 4,
-      seriesOrder: 2
+      seriesOrder: 2,
+      seoTitle: "Series SEO",
+      seoDescription: "Series SEO description"
     });
   });
 
